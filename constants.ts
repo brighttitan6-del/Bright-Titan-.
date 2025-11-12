@@ -1,4 +1,4 @@
-import { Role, User, Subject, VideoLesson, LiveClass, PaymentRecord, Quiz, QuizAttempt, Enrollment, LessonCompletion, ActivityLog, ActivityType, Book, SubjectPost, PostType, JobApplication, ApplicationStatus } from './types';
+import { Role, User, Subject, VideoLesson, LiveClass, PaymentRecord, Quiz, QuizAttempt, Enrollment, LessonCompletion, ActivityLog, ActivityType, Book, SubjectPost, PostType, JobApplication, ApplicationStatus, DirectMessage } from './types';
 
 export const USERS: User[] = [
   { id: 'user-1', name: 'Alice Smith', email: 'alice@example.com', role: Role.Student, profilePicture: 'https://i.pravatar.cc/150?u=user-1', password: 'password123' },
@@ -93,5 +93,10 @@ export const SUBJECT_POSTS: SubjectPost[] = [
 ];
 
 export const INITIAL_JOB_APPLICATIONS: JobApplication[] = [
-    { id: 'app-1', name: 'John Doe', email: 'johndoe@example.com', subjects: ['Physics', 'Chemistry'], status: ApplicationStatus.Pending, timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) },
+    { id: 'app-1', name: 'John Doe', email: 'johndoe@example.com', phoneNumber: '0991234567', subjects: ['Physics', 'Chemistry'], status: ApplicationStatus.Pending, timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) },
+];
+
+export const INITIAL_DIRECT_MESSAGES: DirectMessage[] = [
+  { id: 'dm-1', senderId: 'user-7', receiverId: 'user-2', text: 'Hi Emily, just checking in. How are the English classes going?', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000) },
+  { id: 'dm-2', senderId: 'user-2', receiverId: 'user-7', text: 'Hi! They are going well. The students are very engaged with the new poetry unit.', timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000) },
 ];

@@ -15,6 +15,7 @@ export interface JobApplication {
     id: string;
     name: string;
     email: string;
+    phoneNumber: string;
     subjects: string[]; // e.g., ["Mathematics", "Physics"]
     status: ApplicationStatus;
     timestamp: Date;
@@ -170,4 +171,20 @@ export interface ToastMessage {
     id: number;
     message: string;
     type: 'success' | 'error' | 'info';
+}
+
+export interface Withdrawal {
+  id: string;
+  amount: number;
+  method: 'Airtel Money' | 'TNM Mpamba';
+  phoneNumber: string;
+  timestamp: Date;
+}
+
+export interface DirectMessage {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  text: string;
+  timestamp: Date;
 }

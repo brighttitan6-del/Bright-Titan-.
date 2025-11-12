@@ -340,6 +340,13 @@ export const BuildingStorefrontIcon = ({ className, title }: IconProps) => (
     </svg>
 );
 
+export const BanknotesIcon = ({ className, title }: IconProps) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        {title && <title>{title}</title>}
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.75A.75.75 0 013 4.5h.75m0 0A.75.75 0 014.5 6v.75m0 0v-.75A.75.75 0 014.5 4.5h.75m0 0A.75.75 0 016 6v.75m0 0v-.75A.75.75 0 016 4.5h.75m0 0A.75.75 0 017.5 6v.75m0 0v-.75A.75.75 0 017.5 4.5h.75m0 0a.75.75 0 01.75.75v.75m0 0A.75.75 0 019 4.5h.75m0 0a.75.75 0 01.75.75v.75m0 0a.75.75 0 01.75-.75h3a.75.75 0 01.75.75v.75m0 0A.75.75 0 0112.75 6H12m0 0A.75.75 0 0011.25 5.25v-.75a.75.75 0 01.75-.75h3a.75.75 0 01.75.75v.75A.75.75 0 0115 6h-.75m-3 0A.75.75 0 0112.75 5.25v-.75a.75.75 0 01.75-.75h3a.75.75 0 01.75.75v.75A.75.75 0 0115 6h-.75M12 10.5h3m-3 0h-3m3 0v3m0 0v-3m0 0h3m-3 0h-3m3 0v-3m0 3h3m-3 0h-3m-3.75 6.75h15a.75.75 0 00.75-.75V6a.75.75 0 00-.75-.75h-15a.75.75 0 00-.75.75v10.5a.75.75 0 00.75.75z" />
+    </svg>
+);
+
 export const LightBulbIcon = ({ className, title }: IconProps) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         {title && <title>{title}</title>}
