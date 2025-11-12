@@ -1,8 +1,11 @@
+
+
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Role, Subject, VideoLesson, LiveClass, ChatMessage, PaymentRecord, QuizAttempt, Enrollment, LessonCompletion, ActivityType, ActivityLog, Book, SubjectPost, PostType, JobApplication, ApplicationStatus, BookPurchase, ToastMessage } from './types';
 import { USERS, SUBJECTS, VIDEO_LESSONS, INITIAL_LIVE_CLASSES, PAYMENT_HISTORY, QUIZZES, QUIZ_ATTEMPTS, ENROLLMENTS, LESSON_COMPLETIONS, ACTIVITY_LOGS, BOOKS, SUBJECT_POSTS, INITIAL_JOB_APPLICATIONS } from './constants';
 import { runAiTutor, generateQuizOptions } from './services/geminiService';
-import { UserCircleIcon, BellIcon, ArrowLeftIcon, SearchIcon, VideoCameraIcon, ClockIcon, SendIcon, SparklesIcon, WalletIcon, CheckCircleIcon, AirtelMoneyIcon, TnmMpambaIcon, NationalBankIcon, StarIcon, UserGroupIcon, ChartBarIcon, PencilIcon, PlusIcon, ExclamationTriangleIcon, CloseIcon, LockClosedIcon, Cog6ToothIcon, CameraIcon, BookOpenIcon, DocumentCheckIcon, CloudArrowUpIcon, TrashIcon, RssIcon, XCircleIcon, ComputerDesktopIcon, MicrophoneIcon, VideoCameraSlashIcon, ChevronUpIcon, WifiIcon, EyeIcon, BuildingStorefrontIcon, LightBulbIcon, QuestionMarkCircleIcon, ChatBubbleLeftRightIcon, PlayIcon, PauseIcon, SpeakerWaveIcon, SpeakerXMarkIcon, ArrowsPointingOutIcon, ArrowsPointingInIcon, GoogleIcon, EnvelopeIcon, UserIcon, PhoneIcon, DocumentTextIcon, HomeIcon, AcademicCapIcon, ShoppingCartIcon, SmartLearnLogo, BriefcaseIcon, ShieldCheckIcon, CurrencyDollarIcon, UsersIcon } from './components/icons';
+// FIX: Imported CheckBadgeIcon to resolve 'Cannot find name' error.
+import { UserCircleIcon, BellIcon, ArrowLeftIcon, SearchIcon, VideoCameraIcon, ClockIcon, SendIcon, SparklesIcon, WalletIcon, CheckCircleIcon, CheckBadgeIcon, AirtelMoneyIcon, TnmMpambaIcon, NationalBankIcon, StarIcon, UserGroupIcon, ChartBarIcon, PencilIcon, PlusIcon, ExclamationTriangleIcon, CloseIcon, LockClosedIcon, Cog6ToothIcon, CameraIcon, BookOpenIcon, DocumentCheckIcon, CloudArrowUpIcon, TrashIcon, RssIcon, XCircleIcon, ComputerDesktopIcon, MicrophoneIcon, VideoCameraSlashIcon, ChevronUpIcon, WifiIcon, EyeIcon, BuildingStorefrontIcon, LightBulbIcon, QuestionMarkCircleIcon, ChatBubbleLeftRightIcon, PlayIcon, PauseIcon, SpeakerWaveIcon, SpeakerXMarkIcon, ArrowsPointingOutIcon, ArrowsPointingInIcon, GoogleIcon, EnvelopeIcon, UserIcon, PhoneIcon, DocumentTextIcon, HomeIcon, AcademicCapIcon, ShoppingCartIcon, SmartLearnLogo, BriefcaseIcon, ShieldCheckIcon, CurrencyDollarIcon, UsersIcon } from './components/icons';
 import { Button, Modal, ToastContainer } from './components/common';
 
 const APP_OWNER_ID = 'user-7'; // Mr. Nyalugwe's ID
@@ -1111,6 +1114,11 @@ const StudentLiveView: React.FC<{
     onSendMessage: (msg: ChatMessage) => void,
 }> = ({ liveClass, onLeave, user, messages, onSendMessage }) => {
     const [newMessage, setNewMessage] = useState('');
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
 
     const handleSendMessage = () => {
         if (newMessage.trim()) {
@@ -1149,6 +1157,7 @@ const StudentLiveView: React.FC<{
                             <span>{msg.text}</span>
                         </div>
                     ))}
+                    <div ref={messagesEndRef} />
                 </div>
                 <div className="p-2 border-t border-slate-700 flex gap-2">
                     <input 
@@ -1176,6 +1185,11 @@ const TeacherLiveView: React.FC<{
   onSendMessage: (msg: ChatMessage) => void,
 }> = ({ liveClass, onEnd, user, messages, onSendMessage }) => {
     const [newMessage, setNewMessage] = useState('');
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
 
     const handleSendMessage = () => {
         if (newMessage.trim()) {
@@ -1214,6 +1228,7 @@ const TeacherLiveView: React.FC<{
                             <span>{msg.text}</span>
                         </div>
                     ))}
+                    <div ref={messagesEndRef} />
                 </div>
                 <div className="p-2 border-t border-slate-700 flex gap-2">
                     <input 
@@ -1240,6 +1255,12 @@ const AiTutorModal: React.FC<{ isOpen: boolean, onClose: () => void }> = ({ isOp
     ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
+
 
     const handleSend = async () => {
         if (!input.trim() || isLoading) return;
@@ -1272,6 +1293,7 @@ const AiTutorModal: React.FC<{ isOpen: boolean, onClose: () => void }> = ({ isOp
                             </div>
                         </div>
                     )}
+                    <div ref={messagesEndRef} />
                 </div>
                 <div className="p-4 border-t border-slate-200 dark:border-slate-700 flex items-center gap-2">
                     <input
@@ -2332,6 +2354,151 @@ const JobApplicationModal: React.FC<{
     );
 };
 
+const StudentProgressScreen: React.FC<{
+    user: User;
+    allSubjects: Subject[];
+    allLessons: VideoLesson[];
+    lessonCompletions: LessonCompletion[];
+    quizAttempts: QuizAttempt[];
+    enrollments: Enrollment[];
+    onNavigateToSubject: (subject: Subject) => void;
+}> = ({ user, allSubjects, allLessons, lessonCompletions, quizAttempts, enrollments, onNavigateToSubject }) => {
+    
+    const enrolledSubjectIds = enrollments.filter(e => e.studentId === user.id).map(e => e.subjectId);
+    const enrolledSubjects = allSubjects.filter(s => enrolledSubjectIds.includes(s.id));
+
+    const totalLessonsInEnrolledSubjects = allLessons.filter(l => enrolledSubjectIds.includes(l.subjectId)).length;
+    const completedLessonsCount = lessonCompletions.filter(c => c.studentId === user.id).length;
+    const overallProgress = totalLessonsInEnrolledSubjects > 0 ? Math.round((completedLessonsCount / totalLessonsInEnrolledSubjects) * 100) : 0;
+    
+    const totalQuizzesTaken = quizAttempts.filter(qa => qa.studentId === user.id).length;
+    
+    const recentlyCompleted = lessonCompletions
+        .filter(c => c.studentId === user.id)
+        .sort((a,b) => b.completedAt.getTime() - a.completedAt.getTime())
+        .slice(0, 3)
+        .map(c => allLessons.find(l => l.id === c.lessonId))
+        .filter((l): l is VideoLesson => l !== undefined);
+
+    return (
+        <div className="p-4 space-y-6 animate-fade-in-up">
+            <div>
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-4">My Progress</h2>
+                <div className="grid grid-cols-2 gap-4 text-white">
+                    <StatCard icon={<CheckBadgeIcon/>} title="Overall Completion" value={`${overallProgress}%`} gradient="bg-gradient-to-br from-blue-500 to-indigo-600" />
+                    <StatCard icon={<DocumentTextIcon/>} title="Quizzes Taken" value={totalQuizzesTaken} gradient="bg-gradient-to-br from-green-500 to-emerald-600" />
+                    <StatCard icon={<BookOpenIcon/>} title="Lessons Completed" value={completedLessonsCount} gradient="bg-gradient-to-br from-purple-500 to-pink-600" />
+                    <StatCard icon={<ClockIcon/>} title="Time Spent" value="~14 Hrs" gradient="bg-gradient-to-br from-amber-500 to-orange-600" />
+                </div>
+            </div>
+
+            <div>
+                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Subject Breakdown</h3>
+                <div className="space-y-3">
+                    {enrolledSubjects.map(subject => {
+                        const lessonsForSubject = allLessons.filter(l => l.subjectId === subject.id);
+                        const completedInSubject = lessonCompletions.filter(c => c.studentId === user.id && lessonsForSubject.some(l => l.id === c.lessonId)).length;
+                        const progress = lessonsForSubject.length > 0 ? Math.round((completedInSubject / lessonsForSubject.length) * 100) : 0;
+                        
+                        return (
+                            <div key={subject.id} onClick={() => onNavigateToSubject(subject)} className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm cursor-pointer hover-lift">
+                                <div className="flex justify-between items-center mb-2">
+                                    <div>
+                                        <h4 className="font-bold text-slate-800 dark:text-slate-100">{subject.name}</h4>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400">{subject.teacherName}</p>
+                                    </div>
+                                    <span className="font-bold text-lg text-blue-600 dark:text-blue-400">{progress}%</span>
+                                </div>
+                                <div className="bg-slate-200 dark:bg-slate-700 rounded-full h-2.5">
+                                    <div className="bg-blue-500 h-2.5 rounded-full" style={{ width: `${progress}%` }}></div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+            
+            <div>
+                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Recently Completed</h3>
+                <div className="space-y-3">
+                    {recentlyCompleted.length > 0 ? recentlyCompleted.map(lesson => (
+                        <div key={lesson.id} className="bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm flex items-center gap-3">
+                            <img src={lesson.thumbnail} alt={lesson.title} className="w-20 h-14 object-cover rounded-md" />
+                            <div>
+                                <p className="font-semibold text-sm text-slate-700 dark:text-slate-200">{lesson.title}</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">{allSubjects.find(s => s.id === lesson.subjectId)?.name}</p>
+                            </div>
+                        </div>
+                    )) : (
+                        <p className="text-center text-slate-500 text-sm py-4">You haven't completed any lessons recently.</p>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const NotificationPanel: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  logs: ActivityLog[];
+  user: User;
+}> = ({ isOpen, onClose, logs, user }) => {
+    const userLogs = logs
+        .filter(log => log.userId === user.id)
+        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    
+    const getLogIcon = (type: ActivityType) => {
+        const iconClass = "w-5 h-5";
+        switch (type) {
+            case ActivityType.NewLesson: return <BookOpenIcon className={`${iconClass} text-purple-500`} />;
+            case ActivityType.LiveReminder: return <RssIcon className={`${iconClass} text-red-500`} />;
+            case ActivityType.NewEnrollment: return <UserGroupIcon className={`${iconClass} text-blue-500`} />;
+            case ActivityType.QuizSubmission: return <DocumentCheckIcon className={`${iconClass} text-green-500`} />;
+            case ActivityType.PaymentReceived: return <WalletIcon className={`${iconClass} text-indigo-500`} />;
+            default: return <BellIcon className={`${iconClass} text-slate-500`} />;
+        }
+    };
+    
+    return (
+        <div className={`fixed inset-0 z-30 transition-opacity ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+            <div onClick={onClose} className={`absolute inset-0 bg-black transition-opacity ${isOpen ? 'bg-opacity-50' : 'bg-opacity-0'}`} />
+            <div className={`fixed top-0 right-0 bottom-0 w-full max-w-sm bg-slate-100 dark:bg-slate-900 shadow-xl z-40 flex flex-col transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+                <div className="flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-700">
+                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Notifications</h2>
+                    <button onClick={onClose} className="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
+                        <CloseIcon className="w-6 h-6" />
+                    </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4">
+                    {userLogs.length > 0 ? (
+                        <div className="space-y-3">
+                            {userLogs.map(log => (
+                                <div key={log.id} className="flex items-start gap-3 bg-white dark:bg-slate-800 p-3 rounded-lg">
+                                    <div className="bg-slate-100 dark:bg-slate-700 p-2 rounded-full mt-1">
+                                        {getLogIcon(log.type)}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{log.type}</p>
+                                        <p className="text-sm text-slate-600 dark:text-slate-300">{log.text}</p>
+                                        <p className="text-xs text-slate-400 mt-1">{new Date(log.timestamp).toLocaleString()}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-10 flex flex-col items-center justify-center h-full">
+                            <BellIcon className="w-12 h-12 text-slate-400 mb-2" />
+                            <p className="text-slate-500 dark:text-slate-400 font-semibold">No notifications yet.</p>
+                            <p className="text-sm text-slate-400 dark:text-slate-500">We'll let you know when something new happens.</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // ----- Main App Component -----
 
 export default function App() {
@@ -2755,6 +2922,11 @@ export default function App() {
     }
   };
 
+  const handleNavigateToSubjectFromProgress = (subject: Subject) => {
+    setSelectedSubject(subject);
+    setCurrentView('lessons');
+  };
+
   if (!currentUser) {
     return (
         <>
@@ -2811,7 +2983,15 @@ export default function App() {
                     onWatchLesson={handleWatchLesson} 
                 />
           case 'progress':
-            return <div>Progress screen placeholder</div>
+            return <StudentProgressScreen
+                    user={currentUser}
+                    allSubjects={allSubjects}
+                    allLessons={allVideoLessons}
+                    lessonCompletions={allLessonCompletions}
+                    quizAttempts={allQuizAttempts}
+                    enrollments={allEnrollments}
+                    onNavigateToSubject={handleNavigateToSubjectFromProgress}
+                />
           case 'bookstore':
             return <BookstoreScreen 
                         books={allBooks} 
@@ -2904,13 +3084,13 @@ export default function App() {
       </main>
       
       {currentUser.role === Role.Student && (
-          <div className="w-full max-w-md mx-auto grid grid-cols-4 border-t border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm fixed bottom-0 left-1/2 -translate-x-1/2">
+          <div className="w-full max-w-md mx-auto grid grid-cols-4 border-t border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm fixed bottom-0 left-1/2 -translate-x-1/2 z-10">
              <button onClick={() => setActiveStudentView('dashboard')} className={`flex flex-col items-center justify-center p-2 text-xs ${activeStudentView === 'dashboard' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`}>
                 <HomeIcon className="w-6 h-6 mb-0.5" />
                 <span>Dashboard</span>
             </button>
              <button onClick={() => setActiveStudentView('progress')} className={`flex flex-col items-center justify-center p-2 text-xs ${activeStudentView === 'progress' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`}>
-                <AcademicCapIcon className="w-6 h-6 mb-0.5" />
+                <ChartBarIcon className="w-6 h-6 mb-0.5" />
                 <span>My Progress</span>
             </button>
              <button onClick={() => setActiveStudentView('bookstore')} className={`flex flex-col items-center justify-center p-2 text-xs ${activeStudentView === 'bookstore' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`}>
@@ -2924,6 +3104,12 @@ export default function App() {
           </div>
       )}
 
+      <NotificationPanel 
+        isOpen={isNotificationPanelOpen}
+        onClose={() => setNotificationPanelOpen(false)}
+        logs={activityLogs}
+        user={currentUser}
+      />
       <VideoPlayerModal lesson={selectedLesson} onClose={() => setSelectedLesson(null)} user={currentUser} onLessonViewed={handleLessonViewed} />
       <AiTutorModal isOpen={isAiTutorOpen} onClose={() => setAiTutorOpen(false)} />
       <QuizModal lesson={quizForLesson} onClose={() => setQuizForLesson(null)} user={currentUser} onQuizComplete={handleQuizComplete} />
