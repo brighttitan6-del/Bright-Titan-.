@@ -77,10 +77,22 @@
     .animate-bounce-in {
         animation: bounce-in 0.5s ease-out forwards;
     }
+    @keyframes float-subtle {
+        0%, 100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-8px);
+        }
+    }
+    .animate-float-subtle {
+        animation: float-subtle 6s ease-in-out infinite;
+    }
 </style>
 </head>
 <body class="bg-slate-100 dark:bg-slate-900">
     <div id="root"></div>
+    <audio id="background-music" loop src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></audio>
     <script type="module" src="/index.tsx"></script>
 </body>
 </html>

@@ -44,10 +44,10 @@ const AuthScreen: React.FC<{
     };
     
     const RoleCard: React.FC<{icon: React.ReactNode, title: Role, description: string, onClick: () => void}> = ({ icon, title, description, onClick }) => (
-        <div onClick={onClick} className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20 text-white text-center cursor-pointer hover:bg-white/20 transition-all duration-300 hover-lift">
+        <div onClick={onClick} className="bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 p-6 rounded-2xl text-white text-center cursor-pointer transition-all duration-300 hover-lift shadow-lg hover:shadow-xl animate-float-subtle">
             <div className="flex justify-center mb-3">{icon}</div>
             <h3 className="text-xl font-bold">{title}</h3>
-            <p className="text-sm text-blue-200 mt-1">{description}</p>
+            <p className="text-sm text-blue-100 mt-1">{description}</p>
         </div>
     );
 
@@ -70,7 +70,7 @@ const AuthScreen: React.FC<{
                     {!isManager && (
                         <div className="flex border-b border-slate-200 mb-6">
                             <button onClick={() => setMode('login')} className={`flex-1 py-3 font-semibold text-center ${mode === 'login' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'}`}>Login</button>
-                            <button onClick={() => setMode('signup')} className={`flex-1 py-3 font-semibold text-center ${mode === 'signup' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'}`}>{isTeacher ? 'Apply' : 'Sign Up'}</button>
+                            <button onClick={() => setMode('signup')} className={`flex-1 py-3 font-semibold text-center ${mode === 'signup' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'}`}>Sign Up</button>
                         </div>
                     )}
 
@@ -83,8 +83,9 @@ const AuthScreen: React.FC<{
                     ) : ( // Signup form
                         isTeacher ? (
                            <div className="text-center space-y-4">
-                               <p className="text-slate-600">Prospective teachers must submit an application for review.</p>
-                               <Button onClick={() => { onApply(); setAuthRole(null); }} className="w-full">Apply to Teach</Button>
+                               <p className="text-slate-600">Teacher accounts are created after a successful application.</p>
+                               <p className="text-sm text-slate-500">Please use the "Apply for a Teaching Job" link on the previous screen to submit an application.</p>
+                               <Button variant="secondary" onClick={() => setAuthRole(null)} className="w-full mt-2">Back to Roles</Button>
                            </div>
                         ) : (
                              <form onSubmit={handleSignUpSubmit} className="space-y-4">
@@ -106,11 +107,18 @@ const AuthScreen: React.FC<{
                  <div className="w-full max-w-lg text-center">
                     <SmartLearnLogo className="w-20 h-20 mx-auto" />
                     <h1 className="text-4xl font-bold text-white mt-2 mb-2">Welcome to SmartLearn</h1>
-                    <p className="text-blue-200 mb-8">Please select your role to continue.</p>
+                    <p className="text-blue-100 mb-8">Please select your role to continue.</p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <RoleCard icon={<AcademicCapIcon className="w-12 h-12 text-blue-300"/>} title={Role.Student} description="Access courses, lessons, and your AI tutor." onClick={() => {setAuthRole(Role.Student); setMode('login')}} />
-                        <RoleCard icon={<BriefcaseIcon className="w-12 h-12 text-blue-300"/>} title={Role.Teacher} description="Manage your content and engage with students." onClick={() => {setAuthRole(Role.Teacher); setMode('login')}} />
-                        <RoleCard icon={<ShieldCheckIcon className="w-12 h-12 text-blue-300"/>} title={Role.Owner} description="Oversee the entire platform and its users." onClick={() => setAuthRole(Role.Owner)} />
+                        <RoleCard icon={<AcademicCapIcon className="w-12 h-12 text-white"/>} title={Role.Student} description="Access courses, lessons, and your AI tutor." onClick={() => {setAuthRole(Role.Student); setMode('login')}} />
+                        <RoleCard icon={<BriefcaseIcon className="w-12 h-12 text-white"/>} title={Role.Teacher} description="Manage your content and engage with students." onClick={() => {setAuthRole(Role.Teacher); setMode('login')}} />
+                        <RoleCard icon={<ShieldCheckIcon className="w-12 h-12 text-white"/>} title={Role.Owner} description="Oversee the entire platform and its users." onClick={() => setAuthRole(Role.Owner)} />
+                    </div>
+                    <div className="mt-10 pt-6 border-t border-blue-100/20">
+                        <h3 className="text-xl font-semibold text-white">Join Our Team</h3>
+                        <p className="text-blue-100 mt-2 mb-4">Are you a passionate educator? We're looking for talented teachers to join our platform.</p>
+                        <Button onClick={onApply} variant="secondary" className="!bg-white !text-blue-600 hover:!bg-blue-50 focus:!ring-blue-300 dark:!bg-slate-100 dark:!text-blue-700">
+                            Apply for a Teaching Job
+                        </Button>
                     </div>
                 </div>
             )}
@@ -1328,6 +1336,19 @@ const PaymentScreen: React.FC<{
     const [paymentSuccess, setPaymentSuccess] = useState(false);
     const [paymentError, setPaymentError] = useState('');
 
+    useEffect(() => {
+        if (paymentSuccess) {
+            const isTuitionPayment = purchaseItem?.type === 'tuition' || !purchaseItem;
+            if (isTuitionPayment) {
+                const timer = setTimeout(() => {
+                    onBack();
+                }, 2500);
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [paymentSuccess, onBack, purchaseItem]);
+
+
     const handlePayment = (e: React.FormEvent) => {
         e.preventDefault();
         setPaymentError('');
@@ -1363,12 +1384,25 @@ const PaymentScreen: React.FC<{
     };
 
     if (paymentSuccess) {
+        const isTuitionPayment = purchaseItem?.type === 'tuition' || !purchaseItem;
         return (
             <div className="p-8 flex flex-col items-center justify-center text-center h-full animate-fade-in-up">
                 <CheckCircleIcon className="w-20 h-20 text-green-500 mb-4 animate-bounce-in" />
                 <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">✅ Payment Successful!</h2>
-                <p className="text-slate-600 dark:text-slate-300 mb-6">Thank you for your purchase.</p>
-                <Button onClick={onBack}>Back to Dashboard</Button>
+                <p className="text-slate-600 dark:text-slate-300 mb-6">
+                    {isTuitionPayment
+                        ? "Thank you for your payment. You now have full access to all lessons!"
+                        : `You have successfully purchased "${(purchaseItem as any)?.item?.title}".`
+                    }
+                </p>
+                {isTuitionPayment && (
+                     <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 animate-pulse">
+                        Redirecting you to the dashboard...
+                    </p>
+                )}
+                <Button onClick={onBack}>
+                    {isTuitionPayment ? "Go to Dashboard Now" : "Back to Bookstore"}
+                </Button>
             </div>
         );
     }
@@ -2540,6 +2574,25 @@ export default function App() {
   const [bookToRead, setBookToRead] = useState<Book | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [isNotificationPanelOpen, setNotificationPanelOpen] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    audioRef.current = document.getElementById('background-music') as HTMLAudioElement;
+    if (audioRef.current) {
+        audioRef.current.volume = 0.2;
+        audioRef.current.play().catch(error => console.log("Autoplay was prevented.", error));
+        setIsMuted(audioRef.current.muted);
+    }
+  }, []);
+
+  const toggleMute = () => {
+    if (audioRef.current) {
+        audioRef.current.muted = !audioRef.current.muted;
+        setIsMuted(audioRef.current.muted);
+    }
+  };
+
 
   const addToast = (message: string, type: ToastMessage['type'] = 'info') => {
     setToasts(prev => [...prev, { id: Date.now(), message, type }]);
@@ -2557,6 +2610,7 @@ export default function App() {
         if (!paid) {
             setPaymentPurchaseItem({ type: 'tuition', amount: 15000 });
             setCurrentView('payment');
+            addToast(`Welcome, ${user.name}! Please complete payment to access lessons.`, 'info');
             return;
         }
     }
@@ -3103,6 +3157,14 @@ export default function App() {
             </button>
           </div>
       )}
+
+      <button
+        onClick={toggleMute}
+        className="fixed bottom-20 right-4 bg-white/20 dark:bg-slate-800/50 backdrop-blur-sm p-3 rounded-full text-white z-50 transition-transform hover:scale-110"
+        aria-label={isMuted ? "Unmute music" : "Mute music"}
+      >
+        {isMuted ? <SpeakerXMarkIcon className="w-6 h-6" /> : <SpeakerWaveIcon className="w-6 h-6" />}
+      </button>
 
       <NotificationPanel 
         isOpen={isNotificationPanelOpen}
