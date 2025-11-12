@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartLearn Secondary</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+<script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.29.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0"
+  }
+}
+</script>
+<script>
+    // Immediately apply theme from localStorage to prevent flash of unstyled content.
+    if (localStorage.getItem('smartlearn-theme') === 'dark' || (!('smartlearn-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+</script>
+<style>
+    @keyframes fade-in-up {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    .animate-fade-in-up {
+        animation: fade-in-up 0.5s ease-out forwards;
+    }
+
+    @keyframes card-lift {
+        from { transform: translateY(0); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+        to { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
+    }
+    .hover-lift:hover {
+        animation: card-lift 0.3s ease-out forwards;
+    }
+
+    @keyframes gradient-animation {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    .animated-gradient {
+        background: linear-gradient(-45deg, #1e3a8a, #3b82f6, #22d3ee, #059669);
+        background-size: 400% 400%;
+        animation: gradient-animation 15s ease infinite;
+    }
+    .animated-gradient-login {
+        background: linear-gradient(-45deg, #1d4ed8, #3b82f6, #0ea5e9, #14b8a6);
+        background-size: 400% 400%;
+        animation: gradient-animation 15s ease infinite;
+    }
+    @keyframes bounce-in {
+        0% {
+            opacity: 0;
+            transform: scale(0.5);
+        }
+        60% {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+    .animate-bounce-in {
+        animation: bounce-in 0.5s ease-out forwards;
+    }
+</style>
+</head>
+<body class="bg-slate-100 dark:bg-slate-900">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html>

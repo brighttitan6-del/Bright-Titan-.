@@ -1,0 +1,8 @@
+{
+  "name": " SmartLearn Secondary",
+  "description": "A modern, AI-powered mobile learning app where secondary school students can watch recorded video lessons, join live streaming classes, and get help from an AI tutor.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
