@@ -1,5 +1,7 @@
 
 
+
+
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Role, Subject, VideoLesson, LiveClass, ChatMessage, PaymentRecord, QuizAttempt, Enrollment, LessonCompletion, ActivityType, ActivityLog, Book, SubjectPost, PostType, JobApplication, ApplicationStatus, BookPurchase, ToastMessage } from './types';
 import { USERS, SUBJECTS, VIDEO_LESSONS, INITIAL_LIVE_CLASSES, PAYMENT_HISTORY, QUIZZES, QUIZ_ATTEMPTS, ENROLLMENTS, LESSON_COMPLETIONS, ACTIVITY_LOGS, BOOKS, SUBJECT_POSTS, INITIAL_JOB_APPLICATIONS } from './constants';
@@ -43,11 +45,11 @@ const AuthScreen: React.FC<{
         if (authRole) onSignUp(name, email, password, authRole);
     };
     
-    const RoleCard: React.FC<{icon: React.ReactNode, title: Role, description: string, onClick: () => void}> = ({ icon, title, description, onClick }) => (
-        <div onClick={onClick} className="bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 p-6 rounded-2xl text-white text-center cursor-pointer transition-all duration-300 hover-lift shadow-lg hover:shadow-xl animate-float-subtle">
+    const RoleCard: React.FC<{icon: React.ReactNode, title: Role, description: string, onClick: () => void, gradient: string}> = ({ icon, title, description, onClick, gradient }) => (
+        <div onClick={onClick} className={`${gradient} p-6 rounded-2xl text-white text-center cursor-pointer transition-all duration-300 hover-lift shadow-lg hover:shadow-xl animate-float-subtle`}>
             <div className="flex justify-center mb-3">{icon}</div>
             <h3 className="text-xl font-bold">{title}</h3>
-            <p className="text-sm text-blue-100 mt-1">{description}</p>
+            <p className="text-sm opacity-90 mt-1">{description}</p>
         </div>
     );
 
@@ -109,14 +111,14 @@ const AuthScreen: React.FC<{
                     <h1 className="text-4xl font-bold text-white mt-2 mb-2">Welcome to SmartLearn</h1>
                     <p className="text-blue-100 mb-8">Please select your role to continue.</p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <RoleCard icon={<AcademicCapIcon className="w-12 h-12 text-white"/>} title={Role.Student} description="Access courses, lessons, and your AI tutor." onClick={() => {setAuthRole(Role.Student); setMode('login')}} />
-                        <RoleCard icon={<BriefcaseIcon className="w-12 h-12 text-white"/>} title={Role.Teacher} description="Manage your content and engage with students." onClick={() => {setAuthRole(Role.Teacher); setMode('login')}} />
-                        <RoleCard icon={<ShieldCheckIcon className="w-12 h-12 text-white"/>} title={Role.Owner} description="Oversee the entire platform and its users." onClick={() => setAuthRole(Role.Owner)} />
+                        <RoleCard icon={<AcademicCapIcon className="w-12 h-12 text-white"/>} title={Role.Student} description="Access courses, lessons, and your AI tutor." onClick={() => {setAuthRole(Role.Student); setMode('login')}} gradient="bg-gradient-to-br from-sky-500 to-indigo-600" />
+                        <RoleCard icon={<BriefcaseIcon className="w-12 h-12 text-white"/>} title={Role.Teacher} description="Manage your content and engage with students." onClick={() => {setAuthRole(Role.Teacher); setMode('login')}} gradient="bg-gradient-to-br from-teal-500 to-emerald-600" />
+                        <RoleCard icon={<ShieldCheckIcon className="w-12 h-12 text-white"/>} title={Role.Owner} description="Oversee the entire platform and its users." onClick={() => setAuthRole(Role.Owner)} gradient="bg-gradient-to-br from-purple-600 to-indigo-700" />
                     </div>
                     <div className="mt-10 pt-6 border-t border-blue-100/20">
                         <h3 className="text-xl font-semibold text-white">Join Our Team</h3>
                         <p className="text-blue-100 mt-2 mb-4">Are you a passionate educator? We're looking for talented teachers to join our platform.</p>
-                        <Button onClick={onApply} variant="secondary" className="!bg-white !text-blue-600 hover:!bg-blue-50 focus:!ring-blue-300 dark:!bg-slate-100 dark:!text-blue-700">
+                        <Button onClick={onApply} className="bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:from-orange-600 hover:to-amber-600 focus:ring-orange-300 shadow-lg">
                             Apply for a Teaching Job
                         </Button>
                     </div>
@@ -2142,28 +2144,37 @@ const BookstoreScreen: React.FC<{
                 <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">SmartLearn Bookstore</h2>
                 <p className="text-slate-500 dark:text-slate-400">Textbooks for the Malawi Curriculum</p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-                {books.map(book => {
-                    const isPurchased = purchasedBookIds.includes(book.id);
-                    return (
-                        <div key={book.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-md overflow-hidden flex flex-col hover-lift">
-                            <img src={book.coverPhoto} alt={book.title} className="h-48 w-full object-cover" />
-                            <div className="p-3 flex flex-col flex-grow">
-                                <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100">{book.title}</h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">{book.author}</p>
-                                <div className="mt-auto pt-2">
-                                    <p className="font-bold text-blue-600 dark:text-blue-400 mb-2">MWK {book.price.toLocaleString()}</p>
-                                    {isPurchased ? (
-                                        <Button onClick={() => onReadBook(book)} variant="secondary" className="w-full !py-2 text-xs">Read Now</Button>
-                                    ) : (
-                                        <Button onClick={() => onBuyBook(book)} className="w-full !py-2 text-xs">Buy Now</Button>
-                                    )}
+
+            {books.length > 0 ? (
+                <div className="grid grid-cols-2 gap-4">
+                    {books.map(book => {
+                        const isPurchased = purchasedBookIds.includes(book.id);
+                        return (
+                            <div key={book.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-md overflow-hidden flex flex-col hover-lift">
+                                <img src={book.coverPhoto} alt={book.title} className="h-48 w-full object-cover" />
+                                <div className="p-3 flex flex-col flex-grow">
+                                    <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100">{book.title}</h3>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">{book.author}</p>
+                                    <div className="mt-auto pt-2">
+                                        <p className="font-bold text-blue-600 dark:text-blue-400 mb-2">MWK {book.price.toLocaleString()}</p>
+                                        {isPurchased ? (
+                                            <Button onClick={() => onReadBook(book)} variant="secondary" className="w-full !py-2 text-xs">Read Now</Button>
+                                        ) : (
+                                            <Button onClick={() => onBuyBook(book)} className="w-full !py-2 text-xs">Buy Now</Button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    );
-                })}
-            </div>
+                        );
+                    })}
+                </div>
+            ) : (
+                 <div className="text-center py-10 px-4">
+                    <BookOpenIcon className="w-12 h-12 text-slate-400 mx-auto mb-2" />
+                    <p className="text-slate-500 dark:text-slate-400 font-semibold">The bookstore is currently empty.</p>
+                    <p className="text-sm text-slate-400 dark:text-slate-500">Please check back later.</p>
+                </div>
+            )}
         </div>
     );
 };
@@ -2396,8 +2407,12 @@ const StudentProgressScreen: React.FC<{
     quizAttempts: QuizAttempt[];
     enrollments: Enrollment[];
     onNavigateToSubject: (subject: Subject) => void;
-}> = ({ user, allSubjects, allLessons, lessonCompletions, quizAttempts, enrollments, onNavigateToSubject }) => {
-    
+    books: Book[];
+    purchasedBookIds: string[];
+    onReadBook: (book: Book) => void;
+}> = ({ user, allSubjects, allLessons, lessonCompletions, quizAttempts, enrollments, onNavigateToSubject, books, purchasedBookIds, onReadBook }) => {
+    const [activeTab, setActiveTab] = useState<'overview' | 'books'>('overview');
+
     const enrolledSubjectIds = enrollments.filter(e => e.studentId === user.id).map(e => e.subjectId);
     const enrolledSubjects = allSubjects.filter(s => enrolledSubjectIds.includes(s.id));
 
@@ -2409,65 +2424,105 @@ const StudentProgressScreen: React.FC<{
     
     const recentlyCompleted = lessonCompletions
         .filter(c => c.studentId === user.id)
-        .sort((a,b) => b.completedAt.getTime() - a.completedAt.getTime())
+        .sort((a,b) => b.completedAt.getTime() - a.timestamp.getTime())
         .slice(0, 3)
         .map(c => allLessons.find(l => l.id === c.lessonId))
         .filter((l): l is VideoLesson => l !== undefined);
+        
+    const purchasedBooks = books.filter(b => purchasedBookIds.includes(b.id));
 
     return (
-        <div className="p-4 space-y-6 animate-fade-in-up">
-            <div>
-                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-4">My Progress</h2>
-                <div className="grid grid-cols-2 gap-4 text-white">
-                    <StatCard icon={<CheckBadgeIcon/>} title="Overall Completion" value={`${overallProgress}%`} gradient="bg-gradient-to-br from-blue-500 to-indigo-600" />
-                    <StatCard icon={<DocumentTextIcon/>} title="Quizzes Taken" value={totalQuizzesTaken} gradient="bg-gradient-to-br from-green-500 to-emerald-600" />
-                    <StatCard icon={<BookOpenIcon/>} title="Lessons Completed" value={completedLessonsCount} gradient="bg-gradient-to-br from-purple-500 to-pink-600" />
-                    <StatCard icon={<ClockIcon/>} title="Time Spent" value="~14 Hrs" gradient="bg-gradient-to-br from-amber-500 to-orange-600" />
-                </div>
-            </div>
-
-            <div>
-                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Subject Breakdown</h3>
-                <div className="space-y-3">
-                    {enrolledSubjects.map(subject => {
-                        const lessonsForSubject = allLessons.filter(l => l.subjectId === subject.id);
-                        const completedInSubject = lessonCompletions.filter(c => c.studentId === user.id && lessonsForSubject.some(l => l.id === c.lessonId)).length;
-                        const progress = lessonsForSubject.length > 0 ? Math.round((completedInSubject / lessonsForSubject.length) * 100) : 0;
-                        
-                        return (
-                            <div key={subject.id} onClick={() => onNavigateToSubject(subject)} className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm cursor-pointer hover-lift">
-                                <div className="flex justify-between items-center mb-2">
-                                    <div>
-                                        <h4 className="font-bold text-slate-800 dark:text-slate-100">{subject.name}</h4>
-                                        <p className="text-sm text-slate-500 dark:text-slate-400">{subject.teacherName}</p>
-                                    </div>
-                                    <span className="font-bold text-lg text-blue-600 dark:text-blue-400">{progress}%</span>
-                                </div>
-                                <div className="bg-slate-200 dark:bg-slate-700 rounded-full h-2.5">
-                                    <div className="bg-blue-500 h-2.5 rounded-full" style={{ width: `${progress}%` }}></div>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
+        <div className="animate-fade-in-up">
+            <div className="p-4">
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">My Progress</h2>
             </div>
             
-            <div>
-                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Recently Completed</h3>
-                <div className="space-y-3">
-                    {recentlyCompleted.length > 0 ? recentlyCompleted.map(lesson => (
-                        <div key={lesson.id} className="bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm flex items-center gap-3">
-                            <img src={lesson.thumbnail} alt={lesson.title} className="w-20 h-14 object-cover rounded-md" />
-                            <div>
-                                <p className="font-semibold text-sm text-slate-700 dark:text-slate-200">{lesson.title}</p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">{allSubjects.find(s => s.id === lesson.subjectId)?.name}</p>
-                            </div>
+            <div className="flex border-b border-slate-200 dark:border-slate-700 sticky top-[65px] bg-slate-100 dark:bg-slate-900 z-10">
+                 <button onClick={() => setActiveTab('overview')} className={`flex-1 py-3 font-semibold text-center ${activeTab === 'overview' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 dark:text-slate-400'}`}>Overview</button>
+                 <button onClick={() => setActiveTab('books')} className={`flex-1 py-3 font-semibold text-center ${activeTab === 'books' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 dark:text-slate-400'}`}>My Books ({purchasedBooks.length})</button>
+            </div>
+
+            {activeTab === 'overview' && (
+                <div className="p-4 space-y-6">
+                    <div>
+                        <div className="grid grid-cols-2 gap-4 text-white">
+                            <StatCard icon={<CheckBadgeIcon/>} title="Overall Completion" value={`${overallProgress}%`} gradient="bg-gradient-to-br from-blue-500 to-indigo-600" />
+                            <StatCard icon={<DocumentTextIcon/>} title="Quizzes Taken" value={totalQuizzesTaken} gradient="bg-gradient-to-br from-green-500 to-emerald-600" />
+                            <StatCard icon={<BookOpenIcon/>} title="Lessons Completed" value={completedLessonsCount} gradient="bg-gradient-to-br from-purple-500 to-pink-600" />
+                            <StatCard icon={<ClockIcon/>} title="Time Spent" value="~14 Hrs" gradient="bg-gradient-to-br from-amber-500 to-orange-600" />
                         </div>
-                    )) : (
-                        <p className="text-center text-slate-500 text-sm py-4">You haven't completed any lessons recently.</p>
+                    </div>
+
+                    <div>
+                        <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Subject Breakdown</h3>
+                        <div className="space-y-3">
+                            {enrolledSubjects.map(subject => {
+                                const lessonsForSubject = allLessons.filter(l => l.subjectId === subject.id);
+                                const completedInSubject = lessonCompletions.filter(c => c.studentId === user.id && lessonsForSubject.some(l => l.id === c.lessonId)).length;
+                                const progress = lessonsForSubject.length > 0 ? Math.round((completedInSubject / lessonsForSubject.length) * 100) : 0;
+                                
+                                return (
+                                    <div key={subject.id} onClick={() => onNavigateToSubject(subject)} className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm cursor-pointer hover-lift">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <div>
+                                                <h4 className="font-bold text-slate-800 dark:text-slate-100">{subject.name}</h4>
+                                                <p className="text-sm text-slate-500 dark:text-slate-400">{subject.teacherName}</p>
+                                            </div>
+                                            <span className="font-bold text-lg text-blue-600 dark:text-blue-400">{progress}%</span>
+                                        </div>
+                                        <div className="bg-slate-200 dark:bg-slate-700 rounded-full h-2.5">
+                                            <div className="bg-blue-500 h-2.5 rounded-full" style={{ width: `${progress}%` }}></div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Recently Completed</h3>
+                        <div className="space-y-3">
+                            {recentlyCompleted.length > 0 ? recentlyCompleted.map(lesson => (
+                                <div key={lesson.id} className="bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm flex items-center gap-3">
+                                    <img src={lesson.thumbnail} alt={lesson.title} className="w-20 h-14 object-cover rounded-md" />
+                                    <div>
+                                        <p className="font-semibold text-sm text-slate-700 dark:text-slate-200">{lesson.title}</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">{allSubjects.find(s => s.id === lesson.subjectId)?.name}</p>
+                                    </div>
+                                </div>
+                            )) : (
+                                <p className="text-center text-slate-500 text-sm py-4">You haven't completed any lessons recently.</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+            {activeTab === 'books' && (
+                <div className="p-4">
+                    {purchasedBooks.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-4">
+                            {purchasedBooks.map(book => (
+                                <div key={book.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-md overflow-hidden flex flex-col hover-lift">
+                                    <img src={book.coverPhoto} alt={book.title} className="h-48 w-full object-cover" />
+                                    <div className="p-3 flex flex-col flex-grow">
+                                        <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100">{book.title}</h3>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">{book.author}</p>
+                                        <div className="mt-auto pt-2">
+                                            <Button onClick={() => onReadBook(book)} variant="secondary" className="w-full !py-2 text-xs">Read Now</Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-10 px-4">
+                            <BookOpenIcon className="w-12 h-12 text-slate-400 mx-auto mb-2" />
+                            <p className="text-slate-500 dark:text-slate-400 font-semibold">No books in your library.</p>
+                            <p className="text-sm text-slate-400 dark:text-slate-500">Visit the bookstore to purchase textbooks.</p>
+                        </div>
                     )}
                 </div>
-            </div>
+            )}
         </div>
     );
 };
@@ -3045,6 +3100,9 @@ export default function App() {
                     quizAttempts={allQuizAttempts}
                     enrollments={allEnrollments}
                     onNavigateToSubject={handleNavigateToSubjectFromProgress}
+                    books={allBooks}
+                    purchasedBookIds={bookPurchases.filter(p => p.studentId === currentUser.id).map(p => p.bookId)}
+                    onReadBook={setBookToRead}
                 />
           case 'bookstore':
             return <BookstoreScreen 
