@@ -9,9 +9,9 @@ interface IconProps {
 export const SmartLearnLogo = ({ className, title }: IconProps) => (
     <svg className={className} viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
         {title && <title>{title}</title>}
-        <path d="M25 5 L45 15 L25 25 L5 15 Z" fill="#3b82f6"/>
-        <path d="M10 18 L10 32 L25 40 L40 32 L40 18 L25 26 Z" fill="#1d4ed8"/>
-        <polygon points="25,28 32,24 32,29 25,33" fill="#60a5fa" />
+        <path d="M25 5 L45 15 L25 25 L5 15 Z" fill="#0d9488"/>
+        <path d="M10 18 L10 32 L25 40 L40 32 L40 18 L25 26 Z" fill="#115e59"/>
+        <polygon points="25,28 32,24 32,29 25,33" fill="#2dd4bf" />
         <path d="M30 11 L35 13 L30 15 Z" fill="#ffffff" />
     </svg>
 );
@@ -443,5 +443,20 @@ export const DocumentTextIcon = ({ className, title }: IconProps) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         {title && <title>{title}</title>}
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+);
+
+export const CalendarDaysIcon = ({ className, title }: IconProps) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        {title && <title>{title}</title>}
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0h18M12 12.75h.008v.008H12v-.008zm0 3h.008v.008H12v-.008zm.375-3h.008v.008h-.008v-.008zm.375 3h.008v.008h-.008v-.008zm-1.5-3h.008v.008h-.008v-.008zm-1.5 3h.008v.008h-.008v-.008zm-1.5-3h.008v.008h-.008v-.008zm-1.5 3h.008v.008h-.008v-.008zm3.375-3h.008v.008h-.008v-.008zm3.375 3h.008v.008h-.008v-.008z" />
+    </svg>
+);
+
+export const TrophyIcon = ({ className, title }: IconProps) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        {title && <title>{title}</title>}
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9a9.75 9.75 0 01-4.874-1.942 1.5 1.5 0 01-.48-1.073V8.25c0-.414.336-.75.75-.75h16.5c.414 0 .75.336.75.75v7.485a1.5 1.5 0 01-.48 1.073 9.75 9.75 0 01-4.875 1.942zM12 12.75a.75.75 0 000 1.5.75.75 0 000-1.5zM12 9a.75.75 0 00-.75.75v1.5c0 .414.336.75.75.75h.008a.75.75 0 00.75-.75v-1.5A.75.75 0 0012 9z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-3.375m0 0a1.5 1.5 0 011.5-1.5h.008a1.5 1.5 0 011.5 1.5m-3 0a1.5 1.5 0 00-1.5-1.5H9a1.5 1.5 0 00-1.5 1.5M12 3V6" />
     </svg>
 );

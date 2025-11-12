@@ -6,12 +6,16 @@
 
 
 
+
+
+
+
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Role, Subject, VideoLesson, LiveClass, ChatMessage, PaymentRecord, QuizAttempt, Enrollment, LessonCompletion, ActivityType, ActivityLog, Book, SubjectPost, PostType, JobApplication, ApplicationStatus, BookPurchase, ToastMessage, Withdrawal, DirectMessage } from './types';
 import { USERS, SUBJECTS, VIDEO_LESSONS, INITIAL_LIVE_CLASSES, PAYMENT_HISTORY, QUIZZES, QUIZ_ATTEMPTS, ENROLLMENTS, LESSON_COMPLETIONS, ACTIVITY_LOGS, BOOKS, SUBJECT_POSTS, INITIAL_JOB_APPLICATIONS, INITIAL_DIRECT_MESSAGES } from './constants';
 import { runAiTutor, generateQuizOptions } from './services/geminiService';
 // FIX: Imported CheckBadgeIcon to resolve 'Cannot find name' error.
-import { UserCircleIcon, BellIcon, ArrowLeftIcon, SearchIcon, VideoCameraIcon, ClockIcon, SendIcon, SparklesIcon, WalletIcon, CheckCircleIcon, CheckBadgeIcon, AirtelMoneyIcon, TnmMpambaIcon, NationalBankIcon, StarIcon, UserGroupIcon, ChartBarIcon, PencilIcon, PlusIcon, ExclamationTriangleIcon, CloseIcon, LockClosedIcon, Cog6ToothIcon, CameraIcon, BookOpenIcon, DocumentCheckIcon, CloudArrowUpIcon, TrashIcon, RssIcon, XCircleIcon, ComputerDesktopIcon, MicrophoneIcon, VideoCameraSlashIcon, ChevronUpIcon, WifiIcon, EyeIcon, BuildingStorefrontIcon, LightBulbIcon, QuestionMarkCircleIcon, ChatBubbleLeftRightIcon, PlayIcon, PauseIcon, SpeakerWaveIcon, SpeakerXMarkIcon, ArrowsPointingOutIcon, ArrowsPointingInIcon, GoogleIcon, EnvelopeIcon, UserIcon, PhoneIcon, DocumentTextIcon, HomeIcon, AcademicCapIcon, ShoppingCartIcon, SmartLearnLogo, BriefcaseIcon, ShieldCheckIcon, CurrencyDollarIcon, UsersIcon, BanknotesIcon } from './components/icons';
+import { UserCircleIcon, BellIcon, ArrowLeftIcon, SearchIcon, VideoCameraIcon, ClockIcon, SendIcon, SparklesIcon, WalletIcon, CheckCircleIcon, CheckBadgeIcon, AirtelMoneyIcon, TnmMpambaIcon, NationalBankIcon, StarIcon, UserGroupIcon, ChartBarIcon, PencilIcon, PlusIcon, ExclamationTriangleIcon, CloseIcon, LockClosedIcon, Cog6ToothIcon, CameraIcon, BookOpenIcon, DocumentCheckIcon, CloudArrowUpIcon, TrashIcon, RssIcon, XCircleIcon, ComputerDesktopIcon, MicrophoneIcon, VideoCameraSlashIcon, ChevronUpIcon, WifiIcon, EyeIcon, BuildingStorefrontIcon, LightBulbIcon, QuestionMarkCircleIcon, ChatBubbleLeftRightIcon, PlayIcon, PauseIcon, SpeakerWaveIcon, SpeakerXMarkIcon, ArrowsPointingOutIcon, ArrowsPointingInIcon, GoogleIcon, EnvelopeIcon, UserIcon, PhoneIcon, DocumentTextIcon, HomeIcon, AcademicCapIcon, ShoppingCartIcon, SmartLearnLogo, BriefcaseIcon, ShieldCheckIcon, CurrencyDollarIcon, UsersIcon, BanknotesIcon, CalendarDaysIcon, TrophyIcon } from './components/icons';
 import { Button, Modal, ToastContainer } from './components/common';
 
 const APP_OWNER_ID = 'user-7'; // Mr. Nyalugwe's ID
@@ -23,7 +27,7 @@ const InputWithIcon: React.FC<{ icon: React.ReactNode, type: string, placeholder
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             {icon}
         </div>
-        <input {...props} className="w-full pl-10 pr-4 py-3 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <input {...props} className="w-full pl-10 pr-4 py-3 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500" />
     </div>
 );
 
@@ -75,8 +79,8 @@ const AuthScreen: React.FC<{
 
                     {!isManager && (
                         <div className="flex border-b border-slate-200 mb-6">
-                            <button onClick={() => setMode('login')} className={`flex-1 py-3 font-semibold text-center ${mode === 'login' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'}`}>Login</button>
-                            <button onClick={() => setMode('signup')} className={`flex-1 py-3 font-semibold text-center ${mode === 'signup' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'}`}>Sign Up</button>
+                            <button onClick={() => setMode('login')} className={`flex-1 py-3 font-semibold text-center ${mode === 'login' ? 'text-teal-600 border-b-2 border-teal-600' : 'text-slate-500'}`}>Login</button>
+                            <button onClick={() => setMode('signup')} className={`flex-1 py-3 font-semibold text-center ${mode === 'signup' ? 'text-teal-600 border-b-2 border-teal-600' : 'text-slate-500'}`}>Sign Up</button>
                         </div>
                     )}
 
@@ -113,15 +117,15 @@ const AuthScreen: React.FC<{
                  <div className="w-full max-w-lg text-center">
                     <SmartLearnLogo className="w-20 h-20 mx-auto" />
                     <h1 className="text-4xl font-bold text-white mt-2 mb-2">Welcome to SmartLearn</h1>
-                    <p className="text-blue-100 mb-8">Please select your role to continue.</p>
+                    <p className="text-teal-100 mb-8">Please select your role to continue.</p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <RoleCard icon={<AcademicCapIcon className="w-12 h-12 text-white"/>} title={Role.Student} description="Access courses, lessons, and your AI tutor." onClick={() => {setAuthRole(Role.Student); setMode('login')}} gradient="bg-gradient-to-br from-sky-500 to-indigo-600" />
-                        <RoleCard icon={<BriefcaseIcon className="w-12 h-12 text-white"/>} title={Role.Teacher} description="Manage your content and engage with students." onClick={() => {setAuthRole(Role.Teacher); setMode('login')}} gradient="bg-gradient-to-br from-teal-500 to-emerald-600" />
-                        <RoleCard icon={<ShieldCheckIcon className="w-12 h-12 text-white"/>} title={Role.Owner} description="Oversee the entire platform and its users." onClick={() => setAuthRole(Role.Owner)} gradient="bg-gradient-to-br from-purple-600 to-indigo-700" />
+                        <RoleCard icon={<AcademicCapIcon className="w-12 h-12 text-white"/>} title={Role.Student} description="Access courses, lessons, and your AI tutor." onClick={() => {setAuthRole(Role.Student); setMode('login')}} gradient="bg-gradient-to-br from-teal-500 to-cyan-600" />
+                        <RoleCard icon={<BriefcaseIcon className="w-12 h-12 text-white"/>} title={Role.Teacher} description="Manage your content and engage with students." onClick={() => {setAuthRole(Role.Teacher); setMode('login')}} gradient="bg-gradient-to-br from-emerald-500 to-green-600" />
+                        <RoleCard icon={<ShieldCheckIcon className="w-12 h-12 text-white"/>} title={Role.Owner} description="Oversee the entire platform and its users." onClick={() => setAuthRole(Role.Owner)} gradient="bg-gradient-to-br from-slate-600 to-gray-700" />
                     </div>
-                    <div className="mt-10 pt-6 border-t border-blue-100/20">
+                    <div className="mt-10 pt-6 border-t border-teal-100/20">
                         <h3 className="text-xl font-semibold text-white">Join Our Team</h3>
-                        <p className="text-blue-100 mt-2 mb-4">Are you a passionate educator? We're looking for talented teachers to join our platform.</p>
+                        <p className="text-teal-100 mt-2 mb-4">Are you a passionate educator? We're looking for talented teachers to join our platform.</p>
                         <Button onClick={onApply} className="bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:from-orange-600 hover:to-amber-600 focus:ring-orange-300 shadow-lg">
                             Apply for a Teaching Job
                         </Button>
@@ -162,11 +166,11 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, currentView, onBack, on
     <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-sm p-4 sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 dark:border-slate-700">
       <div className="flex items-center gap-4">
         {showBackButton && onBack ? (
-          <button onClick={onBack} className="text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400" aria-label="Go back">
+          <button onClick={onBack} className="text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400" aria-label="Go back">
             <ArrowLeftIcon className="w-6 h-6" />
           </button>
         ) : (
-            <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400">SmartLearn</h1>
+            <h1 className="text-xl font-bold text-teal-600 dark:text-teal-400">SmartLearn</h1>
         )}
       </div>
       <div className="flex items-center gap-4">
@@ -175,7 +179,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, currentView, onBack, on
             {unreadCount > 0 && <span className="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900"></span>}
         </button>
         {showSettingsButton && (
-             <button onClick={onNavigateToSettings} className="text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400" aria-label="Open settings">
+             <button onClick={onNavigateToSettings} className="text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400" aria-label="Open settings">
                 <Cog6ToothIcon className="w-6 h-6" />
             </button>
         )}
@@ -213,10 +217,10 @@ const SubjectCard: React.FC<{ subject: Subject; onClick: () => void; progress: n
             <div className="mt-auto pt-3">
                 <div className="flex justify-between items-center mb-1">
                     <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Progress</span>
-                    <span className="text-xs font-bold text-blue-600 dark:text-blue-400">{progress}%</span>
+                    <span className="text-xs font-bold text-teal-600 dark:text-teal-400">{progress}%</span>
                 </div>
                 <div className="bg-slate-200 dark:bg-slate-700 rounded-full h-2">
-                    <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${progress}%` }}></div>
+                    <div className="bg-teal-500 h-2 rounded-full" style={{ width: `${progress}%` }}></div>
                 </div>
             </div>
         </div>
@@ -268,7 +272,7 @@ const StudentDashboard: React.FC<{
                     placeholder="Search subjects or teachers..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-10 pr-4 py-3 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
                 <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             </div>
@@ -290,7 +294,7 @@ const StudentDashboard: React.FC<{
                                             <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 truncate">{lesson.title}</h3>
                                             <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">{subject?.name}</p>
                                             <div className="bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
-                                                <div className="bg-blue-500 h-1.5 rounded-full" style={{width: `${progress}%`}}></div>
+                                                <div className="bg-teal-500 h-1.5 rounded-full" style={{width: `${progress}%`}}></div>
                                             </div>
                                         </div>
                                     </div>
@@ -303,15 +307,15 @@ const StudentDashboard: React.FC<{
                         <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Upcoming Live Classes</h2>
                         <div className="space-y-3">
                             {allLiveClasses.map(lc => (
-                                <div key={lc.id} className="bg-gradient-to-r from-blue-600 to-sky-500 text-white p-4 rounded-xl shadow-lg flex items-center justify-between hover-lift">
+                                <div key={lc.id} className="bg-gradient-to-r from-teal-600 to-cyan-500 text-white p-4 rounded-xl shadow-lg flex items-center justify-between hover-lift">
                                     <div className="flex items-center gap-3">
                                         <div className="bg-white/20 p-2 rounded-full"><RssIcon className="w-5 h-5"/></div>
                                         <div>
                                             <h3 className="font-bold">{lc.title}</h3>
-                                            <p className="text-sm text-blue-200">{lc.teacherName} - {lc.startTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                                            <p className="text-sm text-teal-200">{lc.teacherName} - {lc.startTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                                         </div>
                                     </div>
-                                    <Button onClick={() => onJoinLiveClass(lc)} className="py-2 px-4 text-sm !bg-white !text-blue-600 hover:!bg-blue-50 focus:!ring-blue-200">Join</Button>
+                                    <Button onClick={() => onJoinLiveClass(lc)} className="py-2 px-4 text-sm !bg-white !text-teal-600 hover:!bg-teal-50 focus:!ring-teal-200">Join</Button>
                                 </div>
                             ))}
                         </div>
@@ -353,7 +357,7 @@ const ActivityFeed: React.FC<{ logs: ActivityLog[], users: User[] }> = ({ logs, 
     const getLogIcon = (type: ActivityType) => {
         const iconClass = "w-5 h-5";
         switch (type) {
-            case ActivityType.NewEnrollment: return <UserGroupIcon className={`${iconClass} text-blue-500`} />;
+            case ActivityType.NewEnrollment: return <UserGroupIcon className={`${iconClass} text-teal-500`} />;
             case ActivityType.QuizSubmission: return <CheckCircleIcon className={`${iconClass} text-green-500`} />;
             case ActivityType.NewLesson: return <VideoCameraIcon className={`${iconClass} text-purple-500`} />;
             case ActivityType.LiveReminder: return <RssIcon className={`${iconClass} text-red-500`} />;
@@ -378,6 +382,109 @@ const ActivityFeed: React.FC<{ logs: ActivityLog[], users: User[] }> = ({ logs, 
                     </div>
                 )) : (
                     <p className="text-center text-slate-500 text-sm py-3">No recent activity.</p>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// FIX: Added ChatInterface component definition to resolve 'Cannot find name' error.
+const ChatInterface: React.FC<{
+    currentUser: User;
+    users: User[]; // The potential chat partners
+    messages: DirectMessage[];
+    onSendMessage: (receiverId: string, text: string) => void;
+}> = ({ currentUser, users, messages, onSendMessage }) => {
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(users.length > 0 ? users[0].id : null);
+    const [newMessage, setNewMessage] = useState('');
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!selectedUserId && users.length > 0) {
+            setSelectedUserId(users[0].id);
+        }
+    }, [users, selectedUserId]);
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages, selectedUserId]);
+    
+    const selectedUser = users.find(u => u.id === selectedUserId);
+
+    const conversationMessages = messages.filter(
+        m => (m.senderId === currentUser.id && m.receiverId === selectedUserId) || (m.senderId === selectedUserId && m.receiverId === currentUser.id)
+    ).sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+
+    const handleSendMessage = () => {
+        if (newMessage.trim() && selectedUserId) {
+            onSendMessage(selectedUserId, newMessage.trim());
+            setNewMessage('');
+        }
+    };
+
+    return (
+        <div className="flex h-[70vh] bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden">
+            <div className="w-1/3 border-r border-slate-200 dark:border-slate-700 flex flex-col">
+                <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+                    <h3 className="font-bold text-slate-800 dark:text-slate-100">Conversations</h3>
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                    {users.map(user => (
+                        <button
+                            key={user.id}
+                            onClick={() => setSelectedUserId(user.id)}
+                            className={`w-full text-left p-3 flex items-center gap-3 transition-colors ${selectedUserId === user.id ? 'bg-teal-50 dark:bg-teal-900/50' : 'hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
+                        >
+                            <img src={user.profilePicture} alt={user.name} className="w-10 h-10 rounded-full object-cover" />
+                            <div>
+                                <p className="font-semibold text-sm text-slate-800 dark:text-slate-100">{user.name}</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">{user.role}</p>
+                            </div>
+                        </button>
+                    ))}
+                </div>
+            </div>
+            <div className="w-2/3 flex flex-col">
+                {selectedUser ? (
+                    <>
+                        <div className="p-3 border-b border-slate-200 dark:border-slate-700 flex items-center gap-3">
+                            <img src={selectedUser.profilePicture} alt={selectedUser.name} className="w-10 h-10 rounded-full object-cover" />
+                            <div>
+                                <p className="font-bold text-slate-800 dark:text-slate-100">{selectedUser.name}</p>
+                            </div>
+                        </div>
+                        <div className="flex-1 p-4 space-y-4 overflow-y-auto bg-slate-50 dark:bg-slate-900">
+                            {conversationMessages.map(msg => (
+                                <div key={msg.id} className={`flex ${msg.senderId === currentUser.id ? 'justify-end' : 'justify-start'}`}>
+                                    <div className={`rounded-xl px-4 py-2 max-w-md ${msg.senderId === currentUser.id ? 'bg-teal-600 text-white' : 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm'}`}>
+                                        <p>{msg.text}</p>
+                                        <p className={`text-xs mt-1 ${msg.senderId === currentUser.id ? 'text-teal-200' : 'text-slate-400'}`}>{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                    </div>
+                                </div>
+                            ))}
+                             <div ref={messagesEndRef} />
+                        </div>
+                        <div className="p-3 border-t border-slate-200 dark:border-slate-700 flex items-center gap-2">
+                             <input
+                                type="text"
+                                value={newMessage}
+                                onChange={(e) => setNewMessage(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                                placeholder="Type a message..."
+                                className="w-full px-4 py-2 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                            />
+                            <button onClick={handleSendMessage} className="bg-teal-600 text-white p-3 rounded-full hover:bg-teal-700 transition-colors shrink-0">
+                                <SendIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    <div className="flex-1 flex items-center justify-center text-slate-500">
+                        <div className="text-center">
+                            <ChatBubbleLeftRightIcon className="w-12 h-12 text-slate-400 mx-auto mb-2"/>
+                            <p>Select a conversation to start chatting.</p>
+                        </div>
+                    </div>
                 )}
             </div>
         </div>
@@ -458,7 +565,7 @@ const OwnerDashboard: React.FC<{
             <div className="p-4 space-y-6 animate-fade-in-up">
                 <div className="flex border-b border-slate-200 dark:border-slate-700 overflow-x-auto">
                     {['overview', 'bookstore', 'applications', 'teachers', 'chat'].map(tab => (
-                        <button key={tab} onClick={() => setActiveTab(tab as any)} className={`flex-1 min-w-max py-2 px-3 font-semibold text-center text-sm capitalize ${activeTab === tab ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'}`}>
+                        <button key={tab} onClick={() => setActiveTab(tab as any)} className={`flex-1 min-w-max py-2 px-3 font-semibold text-center text-sm capitalize ${activeTab === tab ? 'text-teal-600 border-b-2 border-teal-600' : 'text-slate-500'}`}>
                             {tab}{tab === 'applications' ? ` (${pendingApplications})` : ''}
                         </button>
                     ))}
@@ -469,8 +576,8 @@ const OwnerDashboard: React.FC<{
                         <div className="text-white">
                             <div className="grid grid-cols-2 gap-4">
                                 <StatCard icon={<CurrencyDollarIcon/>} title="Total Revenue" value={`MWK ${totalRevenue.toLocaleString()}`} gradient="bg-gradient-to-br from-green-500 to-emerald-600" />
-                                <StatCard icon={<UsersIcon/>} title="Total Users" value={totalStudents + totalTeachers} gradient="bg-gradient-to-br from-sky-500 to-blue-600" />
-                                <StatCard icon={<AcademicCapIcon/>} title="Active Students" value={totalStudents} gradient="bg-gradient-to-br from-purple-500 to-indigo-600" />
+                                <StatCard icon={<UsersIcon/>} title="Total Users" value={totalStudents + totalTeachers} gradient="bg-gradient-to-br from-cyan-500 to-teal-600" />
+                                <StatCard icon={<AcademicCapIcon/>} title="Active Students" value={totalStudents} gradient="bg-gradient-to-br from-sky-500 to-blue-600" />
                                 <StatCard icon={<BriefcaseIcon/>} title="Pending Applications" value={pendingApplications} gradient="bg-gradient-to-br from-amber-500 to-orange-600" />
                             </div>
                         </div>
@@ -481,7 +588,7 @@ const OwnerDashboard: React.FC<{
                                 <div className="flex justify-between"><span className="text-slate-500">Available Balance:</span> <span className="font-bold text-green-600">MWK {availableBalance.toLocaleString()}</span></div>
                                 <div className="flex justify-between"><span className="text-slate-500">Total Withdrawn:</span> <span className="font-bold">MWK {totalWithdrawn.toLocaleString()}</span></div>
                             </div>
-                            <Button onClick={() => setWithdrawModalOpen(true)} className="w-full mt-4 !bg-indigo-600">
+                            <Button onClick={() => setWithdrawModalOpen(true)} className="w-full mt-4">
                                 <div className="flex items-center justify-center gap-2"><BanknotesIcon className="w-5 h-5" /> Withdraw Funds</div>
                             </Button>
                         </div>
@@ -526,7 +633,7 @@ const OwnerDashboard: React.FC<{
                                     <div className="flex-1">
                                         <p className="font-bold text-slate-800 dark:text-slate-100">{book.title}</p>
                                         <p className="text-sm text-slate-500 dark:text-slate-400">by {book.author}</p>
-                                        <p className="text-xs font-semibold text-blue-600 dark:text-blue-400">MWK {book.price.toLocaleString()}</p>
+                                        <p className="text-xs font-semibold text-teal-600 dark:text-teal-400">MWK {book.price.toLocaleString()}</p>
                                     </div>
                                     <div className="flex gap-2">
                                         <button onClick={() => setBookToEdit(book)} className="p-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600"><PencilIcon className="w-4 h-4 text-slate-600 dark:text-slate-300"/></button>
@@ -586,7 +693,7 @@ const OwnerDashboard: React.FC<{
                  {activeTab === 'chat' && (
                     <ChatInterface 
                         currentUser={user}
-                        users={allUsers}
+                        users={allUsers.filter(u => u.id !== user.id && u.role === Role.Teacher)}
                         messages={directMessages}
                         onSendMessage={onSendMessage}
                     />
@@ -653,7 +760,7 @@ const WithdrawModal: React.FC<{
                         onChange={(e) => setAmount(e.target.value)}
                         max={availableBalance}
                         placeholder="0.00"
-                        className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
                     />
                 </div>
                 <div>
@@ -661,7 +768,7 @@ const WithdrawModal: React.FC<{
                     <select
                         value={method}
                         onChange={(e) => setMethod(e.target.value as 'Airtel Money' | 'TNM Mpamba')}
-                        className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
                     >
                         <option>Airtel Money</option>
                         <option>TNM Mpamba</option>
@@ -674,7 +781,7 @@ const WithdrawModal: React.FC<{
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
                         placeholder="e.g., 0991234567"
-                        className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
                     />
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
@@ -735,19 +842,19 @@ const AddEditBookModal: React.FC<{
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Book Title</label>
-                    <input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                    <input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500" required />
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Author</label>
-                    <input type="text" value={author} onChange={e => setAuthor(e.target.value)} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                    <input type="text" value={author} onChange={e => setAuthor(e.target.value)} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500" required />
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Subject</label>
-                    <input type="text" value={subject} onChange={e => setSubject(e.target.value)} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                    <input type="text" value={subject} onChange={e => setSubject(e.target.value)} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500" required />
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Price (MWK)</label>
-                    <input type="number" value={price} onChange={e => setPrice(e.target.value)} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                    <input type="number" value={price} onChange={e => setPrice(e.target.value)} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500" required />
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
                     <Button variant="secondary" onClick={onClose}>Cancel</Button>
@@ -807,11 +914,12 @@ const TeacherDashboard: React.FC<{
     onUploadLessonClick: (subjectId: string) => void;
     onGoLive: (liveClass: LiveClass) => void;
     onStartQuickLive: () => void;
+    onScheduleLive: () => void;
     onEditLiveClass: (liveClass: LiveClass) => void;
     directMessages: DirectMessage[];
     onSendMessage: (receiverId: string, text: string) => void;
     allUsers: User[];
-}> = ({ user, students, allSubjects, allLessons, allLiveClasses, quizAttempts, activityLogs, onEditStudent, enrollments, paymentRecords, onAddStudentClick, onViewStudentDetails, onDeleteLesson, onUploadLessonClick, onGoLive, onStartQuickLive, onEditLiveClass, directMessages, onSendMessage, allUsers }) => {
+}> = ({ user, students, allSubjects, allLessons, allLiveClasses, quizAttempts, activityLogs, onEditStudent, enrollments, paymentRecords, onAddStudentClick, onViewStudentDetails, onDeleteLesson, onUploadLessonClick, onGoLive, onStartQuickLive, onScheduleLive, onEditLiveClass, directMessages, onSendMessage, allUsers }) => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'chat'>('dashboard');
   
   const teacherSubjects = allSubjects.filter(s => s.teacherId === user.id);
@@ -819,7 +927,9 @@ const TeacherDashboard: React.FC<{
   
   const teacherLessons = allLessons.filter(l => teacherSubjectIds.includes(l.subjectId));
 
-  const upcomingLiveClasses = allLiveClasses.filter(lc => teacherSubjectIds.includes(lc.subjectId));
+  const upcomingLiveClasses = allLiveClasses
+    .filter(lc => teacherSubjectIds.includes(lc.subjectId) && lc.startTime > new Date())
+    .sort((a,b) => a.startTime.getTime() - b.startTime.getTime());
 
   const enrolledStudentIds = [...new Set(
     enrollments
@@ -843,8 +953,8 @@ const TeacherDashboard: React.FC<{
   return (
     <div className="p-4 space-y-6 animate-fade-in-up">
        <div className="flex border-b border-slate-200 dark:border-slate-700">
-            <button onClick={() => setActiveTab('dashboard')} className={`flex-1 py-2 font-semibold text-center text-sm capitalize ${activeTab === 'dashboard' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'}`}>Dashboard</button>
-            <button onClick={() => setActiveTab('chat')} className={`flex-1 py-2 font-semibold text-center text-sm capitalize ${activeTab === 'chat' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'}`}>Chat</button>
+            <button onClick={() => setActiveTab('dashboard')} className={`flex-1 py-2 font-semibold text-center text-sm capitalize ${activeTab === 'dashboard' ? 'text-teal-600 border-b-2 border-teal-600' : 'text-slate-500'}`}>Dashboard</button>
+            <button onClick={() => setActiveTab('chat')} className={`flex-1 py-2 font-semibold text-center text-sm capitalize ${activeTab === 'chat' ? 'text-teal-600 border-b-2 border-teal-600' : 'text-slate-500'}`}>Chat</button>
       </div>
 
       {activeTab === 'dashboard' ? (
@@ -858,7 +968,11 @@ const TeacherDashboard: React.FC<{
 
           <ActivityFeed logs={teacherActivityLogs} users={students} />
 
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Button onClick={onScheduleLive} variant="secondary" className="w-full flex items-center justify-center gap-2">
+                    <CalendarDaysIcon className="w-5 h-5" />
+                    Schedule a Class
+              </Button>
               <Button onClick={onStartQuickLive} className="!bg-red-500 hover:!bg-red-600 focus:!ring-red-300 w-full">Start a Quick Live Session</Button>
           </div>
           
@@ -870,11 +984,11 @@ const TeacherDashboard: React.FC<{
                   <div className="flex-1">
                     <h3 className="font-bold text-slate-800 dark:text-slate-100">{lc.title}</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
-                      {allSubjects.find(s => s.id === lc.subjectId)?.name} - {lc.startTime.toLocaleDateString()}
+                      {allSubjects.find(s => s.id === lc.subjectId)?.name} - {lc.startTime.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
                     </p>
                   </div>
                   <div className="flex items-center gap-1">
-                     <button onClick={() => onEditLiveClass(lc)} className="text-slate-500 hover:text-blue-600 p-2 rounded-full transition-colors bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-300">
+                     <button onClick={() => onEditLiveClass(lc)} className="text-slate-500 hover:text-teal-600 p-2 rounded-full transition-colors bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-300">
                         <PencilIcon className="w-4 h-4" />
                     </button>
                     <Button onClick={() => onGoLive(lc)} className="py-2 px-3 text-sm !bg-red-500 !text-white hover:!bg-red-600 focus:!ring-red-300">
@@ -898,7 +1012,7 @@ const TeacherDashboard: React.FC<{
               <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">My Students</h2>
                <button 
                     onClick={onAddStudentClick}
-                    className="flex items-center gap-1 bg-blue-100 text-blue-700 font-semibold text-sm py-1.5 px-3 rounded-full hover:bg-blue-200 transition-colors dark:bg-blue-900/50 dark:text-blue-300 dark:hover:bg-blue-900"
+                    className="flex items-center gap-1 bg-teal-100 text-teal-700 font-semibold text-sm py-1.5 px-3 rounded-full hover:bg-teal-200 transition-colors dark:bg-teal-900/50 dark:text-teal-300 dark:hover:bg-teal-900"
                 >
                     <PlusIcon className="w-4 h-4" />
                     Add Student
@@ -921,9 +1035,9 @@ const TeacherDashboard: React.FC<{
                                             <XCircleIcon className="w-5 h-5 text-red-500 shrink-0" />
                                         </span>
                                     )}
-                                    <p className="font-semibold text-slate-800 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{student.name}</p>
+                                    <p className="font-semibold text-slate-800 dark:text-slate-100 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">{student.name}</p>
                                 </button>
-                                <button onClick={() => onEditStudent(student)} className="text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 p-1 rounded-full transition-colors ml-2">
+                                <button onClick={() => onEditStudent(student)} className="text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 p-1 rounded-full transition-colors ml-2">
                                     <PencilIcon className="w-4 h-4" />
                                 </button>
                             </li>
@@ -950,7 +1064,7 @@ const TeacherDashboard: React.FC<{
                               <p className="font-bold text-slate-800 dark:text-slate-100">{studentName}</p>
                               <p className="text-sm text-slate-500 dark:text-slate-400">{attempt.lessonTitle}</p>
                           </div>
-                          <p className="font-bold text-lg text-blue-600 dark:text-blue-400">{attempt.score}/{attempt.totalQuestions}</p>
+                          <p className="font-bold text-lg text-teal-600 dark:text-teal-400">{attempt.score}/{attempt.totalQuestions}</p>
                       </div>
                       <p className="text-xs text-slate-400 mt-2">
                           Completed on: {attempt.completedAt.toLocaleDateString()}
@@ -1247,7 +1361,7 @@ const VideoPlayerModal: React.FC<{
                            max="100"
                            value={progress}
                            onChange={handleSeek}
-                           className="w-full h-1 bg-white/30 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-500"
+                           className="w-full h-1 bg-white/30 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-teal-500"
                        />
                        <div className="flex justify-between items-center mt-1">
                            <div className="flex items-center gap-3">
@@ -1263,7 +1377,7 @@ const VideoPlayerModal: React.FC<{
                                        min="0" max="1" step="0.05"
                                        value={isMuted ? 0 : volume}
                                        onChange={handleVolumeChange}
-                                       className="w-0 group-hover/volume:w-20 h-1 bg-white/30 rounded-full appearance-none cursor-pointer transition-all duration-300 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-500"
+                                       className="w-0 group-hover/volume:w-20 h-1 bg-white/30 rounded-full appearance-none cursor-pointer transition-all duration-300 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-teal-500"
                                    />
                                </div>
                                <span className="text-xs font-mono">{formatTime(currentTime)} / {formatTime(duration)}</span>
@@ -1333,9 +1447,9 @@ const VideoPlayerModal: React.FC<{
                             onChange={(e) => setNewComment(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handlePostComment()}
                             placeholder="Add a comment..."
-                            className="flex-1 bg-slate-100 dark:bg-slate-700 rounded-full px-4 py-2 text-slate-800 dark:text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="flex-1 bg-slate-100 dark:bg-slate-700 rounded-full px-4 py-2 text-slate-800 dark:text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
                         />
-                        <button onClick={handlePostComment} className="bg-blue-600 rounded-full p-2.5 text-white hover:bg-blue-700 transition-colors shrink-0">
+                        <button onClick={handlePostComment} className="bg-teal-600 rounded-full p-2.5 text-white hover:bg-teal-700 transition-colors shrink-0">
                             <SendIcon className="w-5 h-5" />
                         </button>
                     </div>
@@ -1372,7 +1486,7 @@ const LiveControls: React.FC<{ onLeave: () => void; isTeacher: boolean }> = ({ o
                 {isCameraOff ? <VideoCameraSlashIcon className="w-6 h-6" /> : <VideoCameraIcon className="w-6 h-6" />}
             </button>
             {isTeacher && (
-                <button onClick={() => setIsSharingScreen(p => !p)} className={`p-3 rounded-full ${isSharingScreen ? 'bg-blue-500' : 'bg-slate-600'} text-white`}>
+                <button onClick={() => setIsSharingScreen(p => !p)} className={`p-3 rounded-full ${isSharingScreen ? 'bg-teal-500' : 'bg-slate-600'} text-white`}>
                     <ComputerDesktopIcon className="w-6 h-6" />
                 </button>
             )}
@@ -1485,7 +1599,7 @@ const StudentLiveView: React.FC<{
                 <div className="flex-1 p-4 space-y-2 overflow-y-auto">
                     {messages.map((msg, i) => (
                         <div key={i} className="text-sm">
-                            <span className={`font-bold ${msg.sender === 'teacher' ? 'text-blue-400' : 'text-green-400'}`}>{msg.name}: </span>
+                            <span className={`font-bold ${msg.sender === 'teacher' ? 'text-teal-400' : 'text-green-400'}`}>{msg.name}: </span>
                             <span>{msg.text}</span>
                         </div>
                     ))}
@@ -1498,9 +1612,9 @@ const StudentLiveView: React.FC<{
                         onChange={(e) => setNewMessage(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                         placeholder="Ask a question..."
-                        className="flex-1 bg-slate-700 rounded-full px-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 bg-slate-700 rounded-full px-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500"
                     />
-                    <button onClick={handleSendMessage} className="bg-blue-600 rounded-full p-2 text-white">
+                    <button onClick={handleSendMessage} className="bg-teal-600 rounded-full p-2 text-white">
                         <SendIcon className="w-5 h-5" />
                     </button>
                 </div>
@@ -1556,7 +1670,7 @@ const TeacherLiveView: React.FC<{
                 <div className="flex-1 p-4 space-y-2 overflow-y-auto">
                     {messages.map((msg, i) => (
                         <div key={i} className="text-sm">
-                            <span className={`font-bold ${msg.sender === 'teacher' ? 'text-blue-400' : 'text-green-400'}`}>{msg.name}: </span>
+                            <span className={`font-bold ${msg.sender === 'teacher' ? 'text-teal-400' : 'text-green-400'}`}>{msg.name}: </span>
                             <span>{msg.text}</span>
                         </div>
                     ))}
@@ -1569,9 +1683,9 @@ const TeacherLiveView: React.FC<{
                         onChange={(e) => setNewMessage(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                         placeholder="Type a message..."
-                        className="flex-1 bg-slate-700 rounded-full px-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 bg-slate-700 rounded-full px-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500"
                     />
-                    <button onClick={handleSendMessage} className="bg-blue-600 rounded-full p-2 text-white">
+                    <button onClick={handleSendMessage} className="bg-teal-600 rounded-full p-2 text-white">
                         <SendIcon className="w-5 h-5" />
                     </button>
                 </div>
@@ -1613,7 +1727,7 @@ const AiTutorModal: React.FC<{ isOpen: boolean, onClose: () => void }> = ({ isOp
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                     {messages.map((msg, index) => (
                         <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`rounded-xl px-4 py-2 max-w-xs ${msg.sender === 'user' ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100'}`}>
+                            <div className={`rounded-xl px-4 py-2 max-w-xs ${msg.sender === 'user' ? 'bg-teal-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100'}`}>
                                 {msg.text}
                             </div>
                         </div>
@@ -1634,10 +1748,10 @@ const AiTutorModal: React.FC<{ isOpen: boolean, onClose: () => void }> = ({ isOp
                         onChange={(e) => setInput(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                         placeholder="Ask me anything..."
-                        className="w-full px-4 py-2 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
                         disabled={isLoading}
                     />
-                    <button onClick={handleSend} disabled={isLoading} className="bg-blue-600 text-white p-3 rounded-full disabled:bg-slate-400">
+                    <button onClick={handleSend} disabled={isLoading} className="bg-teal-600 text-white p-3 rounded-full disabled:bg-slate-400">
                         <SendIcon className="w-5 h-5" />
                     </button>
                 </div>
@@ -1742,7 +1856,7 @@ const PaymentScreen: React.FC<{
         : 'For: School Fees';
         
     return (
-        <div className="p-4 space-y-4 bg-gradient-to-b from-blue-50 to-white dark:from-slate-800 dark:to-slate-900">
+        <div className="p-4 space-y-4 bg-gradient-to-b from-teal-50 to-white dark:from-slate-800 dark:to-slate-900">
             <div className="text-center">
                 <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Complete Your Payment</h2>
                 <p className="text-slate-500 dark:text-slate-400 mt-1">{purchaseTitle}</p>
@@ -1755,7 +1869,7 @@ const PaymentScreen: React.FC<{
                         <button 
                             key={option.name} 
                             onClick={() => setSelectedMethod(option.name)}
-                            className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all duration-300 ${selectedMethod === option.name ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/50 ring-2 ring-blue-200' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-blue-400'}`}
+                            className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all duration-300 ${selectedMethod === option.name ? 'border-teal-600 bg-teal-50 dark:bg-teal-900/50 ring-2 ring-teal-200' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-teal-400'}`}
                         >
                             {option.icon}
                             <span className="font-semibold text-xs text-slate-700 dark:text-slate-200 text-center">{option.name}</span>
@@ -1797,7 +1911,7 @@ const PaymentScreen: React.FC<{
                                 type="number"
                                 value={amount}
                                 onChange={(e) => setAmount(Number(e.target.value))}
-                                className="w-full pl-10 pr-4 py-3 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full pl-10 pr-4 py-3 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
                                 readOnly={purchaseItem?.type === 'book'}
                             />
                         </div>
@@ -1805,7 +1919,7 @@ const PaymentScreen: React.FC<{
                      <Button 
                         type="submit"
                         disabled={!selectedMethod || isProcessing}
-                        className="w-full !bg-blue-600 !text-white disabled:bg-slate-400 disabled:cursor-not-allowed"
+                        className="w-full !bg-teal-600 !text-white disabled:bg-slate-400 disabled:cursor-not-allowed"
                      >
                         {isProcessing ? 'Processing...' : `Pay Now`}
                      </Button>
@@ -1882,7 +1996,7 @@ const QuizModal: React.FC<{
                     <CheckCircleIcon className="w-16 h-16 text-green-500 mx-auto mb-4" />
                     <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Quiz Completed!</h3>
                     <p className="text-lg text-slate-600 dark:text-slate-300 mt-2">
-                        You scored <span className="font-bold text-blue-600">{score}</span> out of <span className="font-bold">{quiz.questions.length}</span>
+                        You scored <span className="font-bold text-teal-600">{score}</span> out of <span className="font-bold">{quiz.questions.length}</span>
                     </p>
                     <Button onClick={onClose} className="mt-6">Back to Lessons</Button>
                 </div>
@@ -1903,7 +2017,7 @@ const QuizModal: React.FC<{
                             onClick={() => handleAnswerSelect(option)}
                             className={`w-full text-left p-4 rounded-lg border-2 font-semibold transition-all ${
                                 selectedAnswers[currentQuestionIndex] === option 
-                                ? 'border-blue-600 bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' 
+                                ? 'border-teal-600 bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300' 
                                 : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
                             }`}
                         >
@@ -1963,7 +2077,7 @@ const EditStudentModal: React.FC<{
             id="studentName"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
           />
         </div>
         <div className="flex justify-end gap-2">
@@ -2002,7 +2116,7 @@ const StudentDetailsModal: React.FC<{
                                 <div key={attempt.id} className="bg-slate-100 dark:bg-slate-700 p-3 rounded-lg">
                                     <div className="flex justify-between items-center">
                                         <p className="font-semibold text-slate-700 dark:text-slate-200">{attempt.lessonTitle}</p>
-                                        <p className="font-bold text-blue-600 dark:text-blue-400">{attempt.score}/{attempt.totalQuestions}</p>
+                                        <p className="font-bold text-teal-600 dark:text-teal-400">{attempt.score}/{attempt.totalQuestions}</p>
                                     </div>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{attempt.completedAt.toLocaleDateString()}</p>
                                 </div>
@@ -2071,11 +2185,11 @@ const AddStudentModal: React.FC<{
             <div className="space-y-4">
                 <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Student Name</label>
-                    <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500" />
                 </div>
                  <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Student Email</label>
-                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500" />
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Enroll in Subjects</label>
@@ -2087,7 +2201,7 @@ const AddStudentModal: React.FC<{
                                     id={`subj-${subject.id}`}
                                     checked={selectedSubjects.includes(subject.id)}
                                     onChange={() => handleSubjectToggle(subject.id)}
-                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
                                 />
                                 <label htmlFor={`subj-${subject.id}`} className="ml-3 text-sm text-slate-700 dark:text-slate-200">{subject.name}</label>
                             </div>
@@ -2130,7 +2244,7 @@ const SubjectDetailsModal: React.FC<{
 const ToggleSwitch: React.FC<{ enabled: boolean; onChange: (enabled: boolean) => void; }> = ({ enabled, onChange }) => (
     <button
         onClick={() => onChange(!enabled)}
-        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 ${enabled ? 'bg-blue-600' : 'bg-gray-200'}`}
+        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 ${enabled ? 'bg-teal-600' : 'bg-gray-200'}`}
         role="switch"
         aria-checked={enabled}
     >
@@ -2186,7 +2300,7 @@ const SettingsScreen: React.FC<{
     };
     
     const getLogIcon = (type: ActivityType) => {
-        const iconClass = "w-6 h-6 text-blue-300";
+        const iconClass = "w-6 h-6 text-teal-300";
         switch (type) {
             case ActivityType.NewLesson: return <BookOpenIcon className={iconClass} />;
             case ActivityType.LiveReminder: return <VideoCameraIcon className={iconClass} />;
@@ -2220,7 +2334,7 @@ const SettingsScreen: React.FC<{
                         />
                         <button 
                             onClick={() => fileInputRef.current?.click()}
-                            className="absolute bottom-0 right-0 bg-blue-500 p-1.5 rounded-full text-white hover:bg-blue-600 transition-colors"
+                            className="absolute bottom-0 right-0 bg-teal-500 p-1.5 rounded-full text-white hover:bg-teal-600 transition-colors"
                             aria-label="Change profile picture"
                         >
                             <CameraIcon className="w-4 h-4" />
@@ -2228,7 +2342,7 @@ const SettingsScreen: React.FC<{
                     </div>
                     <div>
                         <p className="font-medium text-lg">{user.name}</p>
-                        <p className="text-sm text-blue-200">{user.email}</p>
+                        <p className="text-sm text-teal-200">{user.email}</p>
                     </div>
                 </div>
             </div>
@@ -2274,12 +2388,12 @@ const SettingsScreen: React.FC<{
                             </div>
                             <div>
                                 <p className="font-semibold text-sm">{log.type}</p>
-                                <p className="text-xs text-blue-200">{log.text}</p>
-                                <p className="text-xs text-blue-300/70 mt-0.5">{log.timestamp.toLocaleString()}</p>
+                                <p className="text-xs text-teal-200">{log.text}</p>
+                                <p className="text-xs text-teal-300/70 mt-0.5">{log.timestamp.toLocaleString()}</p>
                             </div>
                         </div>
                     )) : (
-                        <p className="text-center text-sm text-blue-200 py-4">No recent activity.</p>
+                        <p className="text-center text-sm text-teal-200 py-4">No recent activity.</p>
                     )}
                 </div>
             </div>
@@ -2329,21 +2443,21 @@ const UploadLessonModal: React.FC<{
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Lesson Title</label>
-                    <input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                    <input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500" required />
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Subject</label>
-                    <select value={subjectId} onChange={e => setSubjectId(e.target.value)} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <select value={subjectId} onChange={e => setSubjectId(e.target.value)} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500" required>
                         {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Description</label>
-                    <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"></textarea>
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Video File</label>
-                    <label htmlFor="video-upload" className="cursor-pointer bg-slate-100 dark:bg-slate-700 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-6 flex flex-col items-center justify-center text-center hover:border-blue-500 transition-colors">
+                    <label htmlFor="video-upload" className="cursor-pointer bg-slate-100 dark:bg-slate-700 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-6 flex flex-col items-center justify-center text-center hover:border-teal-500 transition-colors">
                         <CloudArrowUpIcon className="w-10 h-10 text-slate-400" />
                         <span className="mt-2 text-sm text-slate-600 dark:text-slate-300">{fileName || 'Click to select a file'}</span>
                         <input id="video-upload" type="file" className="hidden" accept="video/*" onChange={e => setFileName(e.target.files?.[0]?.name || '')} />
@@ -2402,11 +2516,11 @@ const StartLiveModal: React.FC<{
             <div className="space-y-4">
                 <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Live Session Title</label>
-                    <input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                    <input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500" required />
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Subject</label>
-                    <select value={subjectId} onChange={e => setSubjectId(e.target.value)} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <select value={subjectId} onChange={e => setSubjectId(e.target.value)} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500" required>
                         {teacherSubjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
                 </div>
@@ -2443,7 +2557,7 @@ const EditLiveClassModal: React.FC<{
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Live Session Title</label>
-          <input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+          <input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500" required />
         </div>
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
@@ -2478,7 +2592,7 @@ const BookstoreScreen: React.FC<{
                                     <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100">{book.title}</h3>
                                     <p className="text-xs text-slate-500 dark:text-slate-400">{book.author}</p>
                                     <div className="mt-auto pt-2">
-                                        <p className="font-bold text-blue-600 dark:text-blue-400 mb-2">MWK {book.price.toLocaleString()}</p>
+                                        <p className="font-bold text-teal-600 dark:text-teal-400 mb-2">MWK {book.price.toLocaleString()}</p>
                                         {isPurchased ? (
                                             <Button onClick={() => onReadBook(book)} variant="secondary" className="w-full !py-2 text-xs">Read Now</Button>
                                         ) : (
@@ -2547,16 +2661,16 @@ const ClassroomFeed: React.FC<{
                         onChange={(e) => setNewPostText(e.target.value)}
                         placeholder="Post an announcement or ask a question..."
                         rows={3}
-                        className="w-full p-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full p-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
                     />
                     <div className="flex justify-between items-center mt-2">
                         <div className="flex items-center gap-2">
-                            <button onClick={() => setPostType(PostType.Announcement)} className={`px-3 py-1 text-xs rounded-full font-semibold ${postType === PostType.Announcement ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'}`}>Announcement</button>
-                            <button onClick={() => setPostType(PostType.Question)} className={`px-3 py-1 text-xs rounded-full font-semibold ${postType === PostType.Question ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'}`}>Question</button>
+                            <button onClick={() => setPostType(PostType.Announcement)} className={`px-3 py-1 text-xs rounded-full font-semibold ${postType === PostType.Announcement ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-700'}`}>Announcement</button>
+                            <button onClick={() => setPostType(PostType.Question)} className={`px-3 py-1 text-xs rounded-full font-semibold ${postType === PostType.Question ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-700'}`}>Question</button>
                         </div>
                         <div className="flex items-center gap-2">
                              {postType === PostType.Question && (
-                                <button onClick={handleAiSuggest} disabled={isAiLoading || !newPostText} className="flex items-center gap-1 text-sm text-blue-600 font-semibold disabled:opacity-50">
+                                <button onClick={handleAiSuggest} disabled={isAiLoading || !newPostText} className="flex items-center gap-1 text-sm text-teal-600 font-semibold disabled:opacity-50">
                                     <LightBulbIcon className="w-4 h-4"/> {isAiLoading ? 'Thinking...' : 'AI Suggest'}
                                 </button>
                             )}
@@ -2572,7 +2686,7 @@ const ClassroomFeed: React.FC<{
                         <div>
                             <div className="flex items-center gap-2">
                                 <p className="font-bold text-slate-800 dark:text-slate-100">{post.teacherName}</p>
-                                {post.type === PostType.Question && <QuestionMarkCircleIcon className="w-5 h-5 text-blue-500" title="Question"/>}
+                                {post.type === PostType.Question && <QuestionMarkCircleIcon className="w-5 h-5 text-teal-500" title="Question"/>}
                             </div>
                             <p className="text-xs text-slate-500 dark:text-slate-400">{post.timestamp.toLocaleString()}</p>
                         </div>
@@ -2615,8 +2729,8 @@ const SubjectView: React.FC<{
                 <p className="text-slate-500 dark:text-slate-400">with {subject.teacherName}</p>
             </div>
             <div className="flex border-b bg-white dark:bg-slate-800 dark:border-slate-700 sticky top-[65px] z-10">
-                <button onClick={() => setActiveTab('lessons')} className={`flex-1 py-3 font-semibold text-center ${activeTab === 'lessons' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 dark:text-slate-400'}`}>Lessons</button>
-                <button onClick={() => setActiveTab('feed')} className={`flex-1 py-3 font-semibold text-center ${activeTab === 'feed' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 dark:text-slate-400'}`}>Classroom Feed</button>
+                <button onClick={() => setActiveTab('lessons')} className={`flex-1 py-3 font-semibold text-center ${activeTab === 'lessons' ? 'text-teal-600 border-b-2 border-teal-600' : 'text-slate-500 dark:text-slate-400'}`}>Lessons</button>
+                <button onClick={() => setActiveTab('feed')} className={`flex-1 py-3 font-semibold text-center ${activeTab === 'feed' ? 'text-teal-600 border-b-2 border-teal-600' : 'text-slate-500 dark:text-slate-400'}`}>Classroom Feed</button>
             </div>
             {activeTab === 'lessons' ? (
                 <div>
@@ -2627,7 +2741,7 @@ const SubjectView: React.FC<{
                                 placeholder="Search lessons by title or topic..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full pl-10 pr-4 py-2 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                             />
                             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                         </div>
@@ -2639,7 +2753,7 @@ const SubjectView: React.FC<{
                                     onClick={() => setSelectedDifficulty(difficulty)}
                                     className={`px-3 py-1 text-xs rounded-full font-semibold ${
                                         selectedDifficulty === difficulty
-                                            ? 'bg-blue-600 text-white'
+                                            ? 'bg-teal-600 text-white'
                                             : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600'
                                     }`}
                                 >
@@ -2701,12 +2815,12 @@ const JobApplicationModal: React.FC<{
                  <InputWithIcon icon={<PhoneIcon className="w-5 h-5 text-slate-400" />} type="tel" placeholder="Phone Number" value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} />
                 <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Subjects you can teach</label>
-                    <input type="text" value={subjects} onChange={e => setSubjects(e.target.value)} placeholder="e.g., Mathematics, Physics" className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                    <input type="text" value={subjects} onChange={e => setSubjects(e.target.value)} placeholder="e.g., Mathematics, Physics" className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500" required />
                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Separate subjects with a comma.</p>
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Upload CV</label>
-                     <label htmlFor="cv-upload" className="cursor-pointer bg-slate-100 dark:bg-slate-700 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-4 flex flex-col items-center justify-center text-center hover:border-blue-500 transition-colors">
+                     <label htmlFor="cv-upload" className="cursor-pointer bg-slate-100 dark:bg-slate-700 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-4 flex flex-col items-center justify-center text-center hover:border-teal-500 transition-colors">
                         <CloudArrowUpIcon className="w-8 h-8 text-slate-400" />
                         <span className="mt-2 text-sm text-slate-600 dark:text-slate-300 truncate max-w-full">{cvFile?.name || 'Click to select a file (.pdf, .doc, .docx)'}</span>
                         <input id="cv-upload" type="file" className="hidden" accept=".pdf,.doc,.docx" onChange={handleFileChange} />
@@ -2718,8 +2832,83 @@ const JobApplicationModal: React.FC<{
     );
 };
 
+// FIX: Added Leaderboard component definition to resolve 'Cannot find name' error.
+const Leaderboard: React.FC<{
+    currentUser: User;
+    allUsers: User[];
+    lessonCompletions: LessonCompletion[];
+    quizAttempts: QuizAttempt[];
+}> = ({ currentUser, allUsers, lessonCompletions, quizAttempts }) => {
+
+    const studentScores = allUsers
+        .filter(u => u.role === Role.Student)
+        .map(student => {
+            const lessonsDone = lessonCompletions.filter(lc => lc.studentId === student.id).length;
+            const quizScore = quizAttempts
+                .filter(qa => qa.studentId === student.id)
+                .reduce((total, attempt) => total + attempt.score, 0);
+            
+            // Simple scoring: 10 points per lesson, 5 per correct quiz answer
+            const totalScore = (lessonsDone * 10) + (quizScore * 5);
+
+            return {
+                ...student,
+                score: totalScore,
+            };
+        })
+        .sort((a, b) => b.score - a.score);
+
+    const currentUserRank = studentScores.findIndex(s => s.id === currentUser.id) + 1;
+
+    const getRankColor = (rank: number) => {
+        if (rank === 1) return 'bg-amber-400 text-amber-900';
+        if (rank === 2) return 'bg-slate-300 text-slate-800';
+        if (rank === 3) return 'bg-orange-300 text-orange-800';
+        return 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300';
+    };
+
+    return (
+        <div className="p-4 space-y-4">
+            <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 text-center">Top Learners</h3>
+            
+            {currentUserRank > 0 && (
+                <div className="bg-gradient-to-r from-teal-500 to-cyan-500 p-4 rounded-xl shadow-lg text-white flex justify-between items-center">
+                    <div>
+                        <p className="text-sm font-semibold opacity-80">Your Rank</p>
+                        <p className="text-3xl font-bold">#{currentUserRank}</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-sm font-semibold opacity-80">Your Score</p>
+                        <p className="text-3xl font-bold">{studentScores.find(s=>s.id === currentUser.id)?.score}</p>
+                    </div>
+                </div>
+            )}
+
+            <div className="space-y-3">
+                {studentScores.slice(0, 10).map((student, index) => {
+                    const rank = index + 1;
+                    return (
+                        <div key={student.id} className={`p-3 rounded-lg flex items-center gap-4 shadow-sm ${currentUser.id === student.id ? 'ring-2 ring-teal-500 bg-white dark:bg-slate-800' : 'bg-white dark:bg-slate-800'}`}>
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${getRankColor(rank)}`}>
+                                {rank}
+                            </div>
+                            <img src={student.profilePicture} alt={student.name} className="w-10 h-10 rounded-full object-cover" />
+                            <p className="font-semibold flex-1 text-slate-800 dark:text-slate-100">{student.name}</p>
+                            <div className="flex items-center gap-1 font-bold text-slate-700 dark:text-slate-200">
+                                <TrophyIcon className="w-5 h-5 text-amber-500" />
+                                <span>{student.score}</span>
+                            </div>
+                        </div>
+                    )
+                })}
+            </div>
+        </div>
+    );
+};
+
 const StudentProgressScreen: React.FC<{
     user: User;
+    allUsers: User[];
     allSubjects: Subject[];
     allLessons: VideoLesson[];
     lessonCompletions: LessonCompletion[];
@@ -2729,8 +2918,8 @@ const StudentProgressScreen: React.FC<{
     books: Book[];
     purchasedBookIds: string[];
     onReadBook: (book: Book) => void;
-}> = ({ user, allSubjects, allLessons, lessonCompletions, quizAttempts, enrollments, onNavigateToSubject, books, purchasedBookIds, onReadBook }) => {
-    const [activeTab, setActiveTab] = useState<'overview' | 'books'>('overview');
+}> = ({ user, allUsers, allSubjects, allLessons, lessonCompletions, quizAttempts, enrollments, onNavigateToSubject, books, purchasedBookIds, onReadBook }) => {
+    const [activeTab, setActiveTab] = useState<'overview' | 'books' | 'leaderboard'>('overview');
 
     const enrolledSubjectIds = enrollments.filter(e => e.studentId === user.id).map(e => e.subjectId);
     const enrolledSubjects = allSubjects.filter(s => enrolledSubjectIds.includes(s.id));
@@ -2743,7 +2932,7 @@ const StudentProgressScreen: React.FC<{
     
     const recentlyCompleted = lessonCompletions
         .filter(c => c.studentId === user.id)
-        .sort((a,b) => b.completedAt.getTime() - a.timestamp.getTime())
+        .sort((a,b) => b.completedAt.getTime() - a.completedAt.getTime())
         .slice(0, 3)
         .map(c => allLessons.find(l => l.id === c.lessonId))
         .filter((l): l is VideoLesson => l !== undefined);
@@ -2757,15 +2946,16 @@ const StudentProgressScreen: React.FC<{
             </div>
             
             <div className="flex border-b border-slate-200 dark:border-slate-700 sticky top-[65px] bg-slate-100 dark:bg-slate-900 z-10">
-                 <button onClick={() => setActiveTab('overview')} className={`flex-1 py-3 font-semibold text-center ${activeTab === 'overview' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 dark:text-slate-400'}`}>Overview</button>
-                 <button onClick={() => setActiveTab('books')} className={`flex-1 py-3 font-semibold text-center ${activeTab === 'books' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 dark:text-slate-400'}`}>My Books ({purchasedBooks.length})</button>
+                 <button onClick={() => setActiveTab('overview')} className={`flex-1 py-3 font-semibold text-center ${activeTab === 'overview' ? 'text-teal-600 border-b-2 border-teal-600' : 'text-slate-500 dark:text-slate-400'}`}>Overview</button>
+                 <button onClick={() => setActiveTab('books')} className={`flex-1 py-3 font-semibold text-center ${activeTab === 'books' ? 'text-teal-600 border-b-2 border-teal-600' : 'text-slate-500 dark:text-slate-400'}`}>My Books ({purchasedBooks.length})</button>
+                 <button onClick={() => setActiveTab('leaderboard')} className={`flex-1 py-3 font-semibold text-center ${activeTab === 'leaderboard' ? 'text-teal-600 border-b-2 border-teal-600' : 'text-slate-500 dark:text-slate-400'}`}>Leaderboard</button>
             </div>
 
             {activeTab === 'overview' && (
                 <div className="p-4 space-y-6">
                     <div>
                         <div className="grid grid-cols-2 gap-4 text-white">
-                            <StatCard icon={<CheckBadgeIcon/>} title="Overall Completion" value={`${overallProgress}%`} gradient="bg-gradient-to-br from-blue-500 to-indigo-600" />
+                            <StatCard icon={<CheckBadgeIcon/>} title="Overall Completion" value={`${overallProgress}%`} gradient="bg-gradient-to-br from-teal-500 to-cyan-600" />
                             <StatCard icon={<DocumentTextIcon/>} title="Quizzes Taken" value={totalQuizzesTaken} gradient="bg-gradient-to-br from-green-500 to-emerald-600" />
                             <StatCard icon={<BookOpenIcon/>} title="Lessons Completed" value={completedLessonsCount} gradient="bg-gradient-to-br from-purple-500 to-pink-600" />
                             <StatCard icon={<ClockIcon/>} title="Time Spent" value="~14 Hrs" gradient="bg-gradient-to-br from-amber-500 to-orange-600" />
@@ -2804,10 +2994,10 @@ const StudentProgressScreen: React.FC<{
                                     <div key={subject.id} onClick={() => onNavigateToSubject(subject)} className="bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm cursor-pointer hover-lift">
                                         <div className="flex justify-between items-center mb-1">
                                             <p className="font-bold text-slate-800 dark:text-slate-100">{subject.name}</p>
-                                            <p className="font-bold text-sm text-blue-600 dark:text-blue-400">{progress}%</p>
+                                            <p className="font-bold text-sm text-teal-600 dark:text-teal-400">{progress}%</p>
                                         </div>
                                         <div className="bg-slate-200 dark:bg-slate-700 rounded-full h-2">
-                                            <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${progress}%` }}></div>
+                                            <div className="bg-teal-500 h-2 rounded-full" style={{ width: `${progress}%` }}></div>
                                         </div>
                                     </div>
                                 );
@@ -2843,6 +3033,15 @@ const StudentProgressScreen: React.FC<{
                 </div>
             )}
 
+            {activeTab === 'leaderboard' && (
+                <Leaderboard
+                    currentUser={user}
+                    allUsers={allUsers}
+                    lessonCompletions={lessonCompletions}
+                    quizAttempts={quizAttempts}
+                />
+            )}
+
         </div>
     );
 };
@@ -2876,511 +3075,5 @@ const App: React.FC = () => {
     const [selectedLessonForVideo, setSelectedLessonForVideo] = useState<VideoLesson | null>(null);
     const [selectedLessonForQuiz, setSelectedLessonForQuiz] = useState<VideoLesson | null>(null);
     const [activeLiveClass, setActiveLiveClass] = useState<LiveClass | null>(null);
-    const [liveChatMessages, setLiveChatMessages] = useState<ChatMessage[]>([]);
-    const [isAiTutorOpen, setIsAiTutorOpen] = useState(false);
-    const [isJobApplicationModalOpen, setJobApplicationModalOpen] = useState(false);
-    
-    const [purchaseItem, setPurchaseItem] = useState<{ type: 'book', item: Book } | { type: 'tuition', amount: number } | null>(null);
-    const [modalStudent, setModalStudent] = useState<User | null>(null);
-    const [modalStudentForDetails, setModalStudentForDetails] = useState<User | null>(null);
-    const [isAddStudentModalOpen, setAddStudentModalOpen] = useState(false);
-    const [lessonToDelete, setLessonToDelete] = useState<VideoLesson | null>(null);
-    const [isUploadLessonModalOpen, setUploadLessonModalOpen] = useState(false);
-    const [uploadDefaultSubjectId, setUploadDefaultSubjectId] = useState<string | undefined>();
-    const [isStartLiveModalOpen, setStartLiveModalOpen] = useState(false);
-    const [liveClassToEdit, setLiveClassToEdit] = useState<LiveClass | null>(null);
-    const [applicationToView, setApplicationToView] = useState<JobApplication | null>(null);
-
-    const currentView = viewStack[viewStack.length - 1];
-    
-    useEffect(() => {
-        const savedTheme = localStorage.getItem('smartlearn-theme');
-        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    }, []);
-
-    const addToast = (message: string, type: ToastMessage['type'] = 'success') => {
-        const newToast: ToastMessage = { id: Date.now(), message, type };
-        setToasts(prev => [...prev, newToast]);
-    };
-  
-    const dismissToast = (id: number) => {
-        setToasts(prev => prev.filter(t => t.id !== id));
-    };
-    
-    // --- HANDLERS ---
-    const handleLogin = (email: string, pass: string, role: Role) => {
-        const user = allUsers.find(u => u.email === email && u.password === pass && u.role === role);
-        if (user) {
-            setCurrentUser(user);
-            addToast(`Welcome back, ${user.name}!`);
-        } else {
-            addToast('Invalid credentials. Please try again.', 'error');
-        }
-    };
-
-    const handleSignUp = (name: string, email: string, pass: string, role: Role) => {
-        if (allUsers.some(u => u.email === email)) {
-            addToast('An account with this email already exists.', 'error');
-            return;
-        }
-        const newUser: User = { id: `user-${Date.now()}`, name, email, role, password: pass, profilePicture: `https://i.pravatar.cc/150?u=user-${Date.now()}`};
-        setAllUsers(prev => [...prev, newUser]);
-        setCurrentUser(newUser);
-        addToast(`Account created successfully! Welcome, ${name}.`);
-    };
-
-    const handleLogout = () => {
-        setCurrentUser(null);
-        setViewStack(['dashboard']);
-        addToast('You have been logged out.');
-    };
-    
-    const navigateTo = (view: string) => setViewStack(prev => [...prev, view]);
-    const goBack = () => {
-        if (viewStack.length > 1) {
-            setViewStack(prev => prev.slice(0, -1));
-            if(currentView === 'subject') setSelectedSubject(null);
-            if(currentView === 'payment') setPurchaseItem(null);
-        }
-    };
-  
-    // Student specific handlers
-    const handleSelectSubject = (subject: Subject) => {
-        const isPaid = paymentHistory.some(p => p.studentId === currentUser?.id);
-        if (!isPaid && currentUser?.role === Role.Student) {
-            addToast('Please pay tuition to access subjects.', 'info');
-            setPurchaseItem({ type: 'tuition', amount: 15000 });
-            navigateTo('payment');
-            return;
-        }
-        setSelectedSubject(subject);
-        navigateTo('subject');
-    };
-    
-    const handlePaymentSuccess = (newRecord: PaymentRecord) => {
-        setPaymentHistory(prev => [newRecord, ...prev]);
-        if (newRecord.purchaseType === 'book' && newRecord.purchaseId) {
-            setBookPurchases(prev => [...prev, { studentId: newRecord.studentId, bookId: newRecord.purchaseId! }]);
-        }
-        addToast('Payment successful!', 'success');
-    };
-
-    const handleQuizComplete = (attemptData: { lessonId: string, score: number, totalQuestions: number, studentId: string }) => {
-        if(!currentUser) return;
-        const newAttempt: QuizAttempt = {
-            id: `qa-${Date.now()}`,
-            studentName: currentUser.name,
-            lessonTitle: allLessons.find(l => l.id === attemptData.lessonId)?.title || 'Lesson',
-            ...attemptData,
-            completedAt: new Date(),
-        };
-        setQuizAttempts(prev => [...prev, newAttempt]);
-        setSelectedLessonForQuiz(null);
-    };
-
-    const handleLessonViewed = (lessonId: string) => {
-        if (currentUser && !lessonCompletions.some(c => c.studentId === currentUser.id && c.lessonId === lessonId)) {
-            const completion: LessonCompletion = { studentId: currentUser.id, lessonId, completedAt: new Date() };
-            setLessonCompletions(prev => [...prev, completion]);
-        }
-    };
-    
-    const handleApplyForJob = (name: string, email: string, phoneNumber: string, subjects: string[], cvFile: File | null) => {
-        const createApplication = (cvDataUrl?: string) => {
-            const newApp: JobApplication = {
-                id: `app-${Date.now()}`,
-                name,
-                email,
-                phoneNumber,
-                subjects,
-                status: ApplicationStatus.Pending,
-                timestamp: new Date(),
-                cvFileName: cvFile?.name,
-                cvDataUrl,
-            };
-            setJobApplications(prev => [newApp, ...prev]);
-            addToast('Your application has been submitted successfully!', 'success');
-        };
-
-        if (cvFile) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                createApplication(reader.result as string);
-            };
-            reader.readAsDataURL(cvFile);
-        } else {
-            createApplication();
-        }
-    };
-    
-    // Teacher handlers
-    const handleAddStudent = (name: string, email: string, subjectIds: string[]) => {
-        const newStudent: User = { id: `user-${Date.now()}`, name, email, role: Role.Student, password: 'password123' };
-        setAllUsers(prev => [...prev, newStudent]);
-        const newEnrollments = subjectIds.map(subjectId => ({ studentId: newStudent.id, subjectId }));
-        setEnrollments(prev => [...prev, ...newEnrollments]);
-        addToast(`Student ${name} added and enrolled.`, 'success');
-        setAddStudentModalOpen(false);
-    };
-    
-    const handleUploadLesson = (lessonData: { title: string; description: string; subjectId: string }) => {
-        const newLesson: VideoLesson = {
-            id: `vl-${Date.now()}`,
-            ...lessonData,
-            thumbnail: `https://picsum.photos/seed/vl-${Date.now()}/400/225`,
-            duration: '15:00',
-            difficulty: 'Beginner',
-        };
-        setAllLessons(prev => [newLesson, ...prev]);
-        addToast(`Lesson "${lessonData.title}" uploaded successfully.`, 'success');
-    };
-    
-    const handleStartLiveClass = (title: string, subjectId: string) => {
-        if (!currentUser) return;
-        const newLiveClass: LiveClass = {
-            id: `lc-${Date.now()}`,
-            title, subjectId, teacherId: currentUser.id, teacherName: currentUser.name, startTime: new Date()
-        };
-        setLiveClasses(p => [...p, newLiveClass]);
-        setActiveLiveClass(newLiveClass);
-    }
-    
-    // Owner handlers
-    const handleApproveApplication = (appId: string) => {
-        const app = jobApplications.find(a => a.id === appId);
-        if(!app) return;
-        
-        const newTeacher: User = {
-            id: `user-${Date.now()}`,
-            name: app.name,
-            email: app.email,
-            role: Role.Teacher,
-            password: 'teacherpassword',
-        };
-        setAllUsers(prev => [...prev, newTeacher]);
-        setJobApplications(prev => prev.map(a => a.id === appId ? {...a, status: ApplicationStatus.Approved} : a));
-        addToast(`Application for ${app.name} approved. Teacher account created.`, 'success');
-    };
-
-    const handleRejectApplication = (appId: string) => {
-        setJobApplications(prev => prev.map(a => a.id === appId ? {...a, status: ApplicationStatus.Rejected} : a));
-        addToast('Application rejected.', 'info');
-    };
-
-    const handleSendMessage = (receiverId: string, text: string) => {
-        if (!currentUser) return;
-        const newMessage: DirectMessage = {
-            id: `dm-${Date.now()}`,
-            senderId: currentUser.id,
-            receiverId,
-            text,
-            timestamp: new Date(),
-        };
-        setDirectMessages(prev => [...prev, newMessage]);
-    };
-
-    // --- RENDER LOGIC ---
-    const renderContent = () => {
-        if (!currentUser) {
-            return <AuthScreen 
-                onLogin={handleLogin}
-                onSignUp={handleSignUp}
-                onGoogleAuth={() => addToast("Google Auth is not implemented.", "info")}
-                onApply={() => setJobApplicationModalOpen(true)}
-            />;
-        }
-
-        if (activeLiveClass) {
-            return currentUser.role === Role.Teacher || currentUser.role === Role.Owner
-                ? <TeacherLiveView liveClass={activeLiveClass} onEnd={() => setActiveLiveClass(null)} user={currentUser} messages={liveChatMessages} onSendMessage={(msg) => setLiveChatMessages(p => [...p, msg])} />
-                : <StudentLiveView liveClass={activeLiveClass} onLeave={() => setActiveLiveClass(null)} user={currentUser} messages={liveChatMessages} onSendMessage={(msg) => setLiveChatMessages(p => [...p, msg])} />;
-        }
-
-        switch (currentView) {
-            case 'subject':
-                return selectedSubject ? <SubjectView user={currentUser} subject={selectedSubject} lessons={allLessons} posts={subjectPosts} onWatchLesson={setSelectedLessonForVideo} onTakeQuiz={setSelectedLessonForQuiz} onAddPost={(p) => setSubjectPosts(prev => [{...p, id: `post-${Date.now()}`}, ...prev])} /> : <div>Subject not found</div>;
-            case 'payment':
-                return <PaymentScreen user={currentUser} onBack={goBack} onPaymentSuccess={handlePaymentSuccess} purchaseItem={purchaseItem || undefined} />;
-            case 'settings':
-                return <SettingsScreen user={currentUser} activityLogs={activityLogs} onUpdateProfilePicture={(dataUrl) => {
-                    setCurrentUser(p => p ? {...p, profilePicture: dataUrl} : null);
-                    setAllUsers(p => p.map(u => u.id === currentUser.id ? {...u, profilePicture: dataUrl} : u));
-                    addToast("Profile picture updated!");
-                }} />;
-            case 'bookstore':
-                return <BookstoreScreen books={allBooks} purchasedBookIds={bookPurchases.filter(p => p.studentId === currentUser.id).map(p => p.bookId)} onBuyBook={(book) => {setPurchaseItem({ type: 'book', item: book }); navigateTo('payment');}} onReadBook={(book) => addToast(`Reading "${book.title}"... (not implemented)`)} />;
-            case 'progress':
-                return <StudentProgressScreen user={currentUser} allSubjects={allSubjects} allLessons={allLessons} lessonCompletions={lessonCompletions} quizAttempts={quizAttempts} enrollments={enrollments} onNavigateToSubject={handleSelectSubject} books={allBooks} purchasedBookIds={bookPurchases.filter(p => p.studentId === currentUser.id).map(p => p.bookId)} onReadBook={(book) => addToast(`Reading "${book.title}"... (not implemented)`)} />;
-            case 'dashboard':
-            default:
-                switch (currentUser.role) {
-                    case Role.Student:
-                        return <StudentDashboard 
-                                    user={currentUser}
-                                    isPaid={paymentHistory.some(p => p.studentId === currentUser.id)}
-                                    allSubjects={allSubjects}
-                                    allLessons={allLessons}
-                                    allLiveClasses={liveClasses}
-                                    lessonCompletions={lessonCompletions}
-                                    activeLiveClass={activeLiveClass}
-                                    onSelectSubject={handleSelectSubject}
-                                    onJoinLiveClass={setActiveLiveClass}
-                                    onPayForLessons={() => { setPurchaseItem({ type: 'tuition', amount: 15000 }); navigateTo('payment'); }}
-                                    onWatchLesson={setSelectedLessonForVideo}
-                                />;
-                    case Role.Teacher:
-                        return <TeacherDashboard 
-                                    user={currentUser}
-                                    students={allUsers.filter(u => u.role === Role.Student)}
-                                    allUsers={allUsers}
-                                    allSubjects={allSubjects}
-                                    allLessons={allLessons}
-                                    allLiveClasses={liveClasses}
-                                    quizAttempts={quizAttempts}
-                                    activityLogs={activityLogs}
-                                    enrollments={enrollments}
-                                    paymentRecords={paymentHistory}
-                                    onEditStudent={setModalStudent}
-                                    onAddStudentClick={() => setAddStudentModalOpen(true)}
-                                    onViewStudentDetails={setModalStudentForDetails}
-                                    onDeleteLesson={setLessonToDelete}
-                                    onUploadLessonClick={(subjectId) => { setUploadDefaultSubjectId(subjectId); setUploadLessonModalOpen(true); }}
-                                    onGoLive={setActiveLiveClass}
-                                    onStartQuickLive={() => setStartLiveModalOpen(true)}
-                                    onEditLiveClass={setLiveClassToEdit}
-                                    directMessages={directMessages}
-                                    onSendMessage={handleSendMessage}
-                                />;
-                    case Role.Owner:
-                        return <OwnerDashboard 
-                                    user={currentUser}
-                                    allUsers={allUsers}
-                                    allPayments={paymentHistory}
-                                    jobApplications={jobApplications}
-                                    allBooks={allBooks}
-                                    withdrawals={withdrawals}
-                                    onApproveApplication={handleApproveApplication}
-                                    onRejectApplication={handleRejectApplication}
-                                    onViewApplication={setApplicationToView}
-                                    setAllBooks={setAllBooks}
-                                    setWithdrawals={setWithdrawals}
-                                    addToast={addToast}
-                                    allSubjects={allSubjects}
-                                    allLessons={allLessons}
-                                    enrollments={enrollments}
-                                    directMessages={directMessages}
-                                    onSendMessage={handleSendMessage}
-                                />;
-                }
-        }
-    };
-
-    return (
-        <div className={`bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen font-sans ${activeLiveClass ? 'overflow-hidden h-screen' : ''}`}>
-            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
-            
-            <AiTutorModal isOpen={isAiTutorOpen} onClose={() => setIsAiTutorOpen(false)} />
-            <JobApplicationModal isOpen={isJobApplicationModalOpen} onClose={() => setJobApplicationModalOpen(false)} onSubmit={handleApplyForJob} />
-            <ApplicationDetailModal application={applicationToView} onClose={() => setApplicationToView(null)} />
-            <VideoPlayerModal lesson={selectedLessonForVideo} onClose={() => setSelectedLessonForVideo(null)} user={currentUser} onLessonViewed={handleLessonViewed} />
-            <QuizModal lesson={selectedLessonForQuiz} onClose={() => setSelectedLessonForQuiz(null)} user={currentUser!} onQuizComplete={handleQuizComplete} />
-            {currentUser && <EditStudentModal student={modalStudent} onClose={() => setModalStudent(null)} onSave={(id, name) => {
-                setAllUsers(p => p.map(u => u.id === id ? {...u, name} : u));
-                setModalStudent(null);
-                addToast("Student updated.");
-            }} />}
-            <StudentDetailsModal student={modalStudentForDetails} onClose={() => setModalStudentForDetails(null)} allSubjects={allSubjects} quizAttempts={quizAttempts} videoLessons={allLessons} />
-            {currentUser?.role === Role.Teacher && <AddStudentModal isOpen={isAddStudentModalOpen} onClose={() => setAddStudentModalOpen(false)} onAdd={handleAddStudent} teacherSubjects={allSubjects.filter(s => s.teacherId === currentUser?.id)} />}
-            <DeleteLessonConfirmationModal lesson={lessonToDelete} onClose={() => setLessonToDelete(null)} onConfirm={(id) => {
-                setAllLessons(p => p.filter(l => l.id !== id));
-                setLessonToDelete(null);
-                addToast("Lesson deleted.", "info");
-            }} />
-            {currentUser?.role === Role.Teacher && <UploadLessonModal isOpen={isUploadLessonModalOpen} onClose={() => setUploadLessonModalOpen(false)} onUpload={handleUploadLesson} subjects={allSubjects.filter(s => s.teacherId === currentUser?.id)} defaultSubjectId={uploadDefaultSubjectId} />}
-            {currentUser?.role === Role.Teacher && <StartLiveModal isOpen={isStartLiveModalOpen} onClose={() => setStartLiveModalOpen(false)} onStart={handleStartLiveClass} teacherSubjects={allSubjects.filter(s => s.teacherId === currentUser?.id)} user={currentUser} />}
-            <EditLiveClassModal liveClass={liveClassToEdit} onClose={() => setLiveClassToEdit(null)} onSave={(id, title) => {
-                setLiveClasses(p => p.map(lc => lc.id === id ? {...lc, title} : lc));
-                addToast("Live class updated.");
-            }} />
-            <SubjectDetailsModal subject={selectedSubject && currentView === 'subject' ? selectedSubject : null} onClose={goBack} onProceed={() => {}} />
-
-            <div className={`transition-all duration-300 ${activeLiveClass ? 'h-screen' : 'max-w-4xl mx-auto'}`}>
-                {currentUser && !activeLiveClass && (
-                    <Header 
-                        user={currentUser}
-                        onLogout={handleLogout}
-                        currentView={currentView}
-                        onBack={goBack}
-                        onNavigateToSettings={() => navigateTo('settings')}
-                        unreadCount={activityLogs.filter(l => !l.read && l.userId === currentUser.id).length}
-                        onToggleNotifications={() => {}}
-                    />
-                )}
-                <main className={!activeLiveClass ? "pb-20" : 'h-full'}>
-                    {renderContent()}
-                </main>
-                {currentUser && !activeLiveClass && (
-                     <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 max-w-4xl mx-auto flex justify-around p-2 z-20">
-                        {currentUser.role === Role.Student && <>
-                            <button onClick={() => setViewStack(['dashboard'])} className={`flex flex-col items-center gap-1 p-2 rounded-lg ${currentView === 'dashboard' ? 'text-blue-600' : 'text-slate-500'}`}><HomeIcon className="w-6 h-6"/> <span className="text-xs">Home</span></button>
-                            <button onClick={() => navigateTo('progress')} className={`flex flex-col items-center gap-1 p-2 rounded-lg ${currentView === 'progress' ? 'text-blue-600' : 'text-slate-500'}`}><ChartBarIcon className="w-6 h-6"/> <span className="text-xs">Progress</span></button>
-                            <button onClick={() => setIsAiTutorOpen(true)} className="flex flex-col items-center gap-1 p-2 rounded-lg text-slate-500"><SparklesIcon className="w-6 h-6"/> <span className="text-xs">AI Tutor</span></button>
-                            <button onClick={() => navigateTo('bookstore')} className={`flex flex-col items-center gap-1 p-2 rounded-lg ${currentView === 'bookstore' ? 'text-blue-600' : 'text-slate-500'}`}><BuildingStorefrontIcon className="w-6 h-6"/> <span className="text-xs">Bookstore</span></button>
-                        </>}
-                    </nav>
-                )}
-            </div>
-        </div>
-    );
-};
-
-const ApplicationDetailModal: React.FC<{ application: JobApplication | null, onClose: () => void }> = ({ application, onClose }) => {
-    if (!application) return null;
-
-    const handleDownloadCv = () => {
-        if (application.cvDataUrl && application.cvFileName) {
-            const link = document.createElement('a');
-            link.href = application.cvDataUrl;
-            link.download = application.cvFileName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        } else {
-            alert('CV data is not available for download.');
-        }
-    };
-
-    const DetailItem: React.FC<{ icon: React.ReactNode, label: string, value: string }> = ({ icon, label, value }) => (
-        <div className="flex items-start gap-3">
-            <div className="text-slate-400 mt-1">{icon}</div>
-            <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
-                <p className="font-semibold text-slate-800 dark:text-slate-100">{value}</p>
-            </div>
-        </div>
-    );
-
-    return (
-        <Modal isOpen={!!application} onClose={onClose} title={`Application: ${application.name}`}>
-            <div className="space-y-4">
-                <DetailItem icon={<EnvelopeIcon className="w-5 h-5"/>} label="Email" value={application.email} />
-                <DetailItem icon={<PhoneIcon className="w-5 h-5"/>} label="Phone Number" value={application.phoneNumber} />
-                <DetailItem icon={<BookOpenIcon className="w-5 h-5"/>} label="Subjects" value={application.subjects.join(', ')} />
-                {application.cvFileName && (
-                    <div className="pt-2">
-                        <Button variant="secondary" className="w-full" onClick={handleDownloadCv}>
-                            <div className="flex items-center justify-center gap-2">
-                                <DocumentTextIcon className="w-5 h-5" />
-                                Download CV ({application.cvFileName})
-                            </div>
-                        </Button>
-                    </div>
-                )}
-            </div>
-        </Modal>
-    );
-};
-
-const ChatInterface: React.FC<{
-    currentUser: User;
-    users: User[];
-    messages: DirectMessage[];
-    onSendMessage: (receiverId: string, text: string) => void;
-}> = ({ currentUser, users, messages, onSendMessage }) => {
-    const isOwner = currentUser.role === Role.Owner;
-    const teachers = users.filter(u => u.role === Role.Teacher);
-    const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(isOwner ? teachers[0]?.id : APP_OWNER_ID);
-    const [newMessage, setNewMessage] = useState('');
-    const messagesEndRef = useRef<HTMLDivElement>(null);
-    
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages, selectedTeacherId]);
-
-    const handleSend = () => {
-        if (newMessage.trim() && selectedTeacherId) {
-            onSendMessage(selectedTeacherId, newMessage.trim());
-            setNewMessage('');
-        }
-    };
-
-    const currentChatMessages = messages.filter(
-        m => (m.senderId === currentUser.id && m.receiverId === selectedTeacherId) || (m.senderId === selectedTeacherId && m.receiverId === currentUser.id)
-    ).sort((a,b) => a.timestamp.getTime() - b.timestamp.getTime());
-    
-    const selectedTeacher = users.find(u => u.id === selectedTeacherId);
-
-    const chatPanel = (
-         <div className="flex flex-col h-full bg-white dark:bg-slate-800 rounded-xl shadow-sm">
-            {selectedTeacher ? (
-                <>
-                    <div className="p-3 border-b border-slate-200 dark:border-slate-700 flex items-center gap-3">
-                        <img src={selectedTeacher.profilePicture} alt={selectedTeacher.name} className="w-10 h-10 rounded-full object-cover" />
-                        <div>
-                            <p className="font-bold text-slate-800 dark:text-slate-100">{selectedTeacher.name}</p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">
-                                <span className="relative flex h-2 w-2 mr-1">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                                </span>
-                                Online
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex-1 p-4 space-y-4 overflow-y-auto">
-                        {currentChatMessages.map(msg => (
-                            <div key={msg.id} className={`flex ${msg.senderId === currentUser.id ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`rounded-xl px-4 py-2 max-w-xs ${msg.senderId === currentUser.id ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100'}`}>
-                                    {msg.text}
-                                </div>
-                            </div>
-                        ))}
-                         <div ref={messagesEndRef} />
-                    </div>
-                    <div className="p-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-2">
-                         <input
-                            type="text" value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                            placeholder="Type a message..."
-                            className="w-full px-4 py-2 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <button onClick={handleSend} className="bg-blue-600 text-white p-3 rounded-full disabled:bg-slate-400">
-                            <SendIcon className="w-5 h-5" />
-                        </button>
-                    </div>
-                </>
-            ) : (
-                <div className="flex items-center justify-center h-full">
-                    <p className="text-slate-500">{isOwner ? 'Select a teacher to start chatting.' : 'No chat available.'}</p>
-                </div>
-            )}
-         </div>
-    );
-
-    return (
-        <div className="h-[70vh] flex gap-4">
-            {isOwner && (
-                <div className="w-1/3 bg-white dark:bg-slate-800 p-2 rounded-xl shadow-sm overflow-y-auto space-y-1">
-                     <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 p-2 mb-2">Teachers</h3>
-                    {teachers.map(teacher => (
-                        <button key={teacher.id} onClick={() => setSelectedTeacherId(teacher.id)} 
-                        className={`w-full text-left p-2 rounded-lg flex items-center gap-3 ${selectedTeacherId === teacher.id ? 'bg-blue-100 dark:bg-blue-900/50' : 'hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
-                            <img src={teacher.profilePicture} alt={teacher.name} className="w-10 h-10 rounded-full object-cover" />
-                            <span className="font-semibold text-slate-800 dark:text-slate-100">{teacher.name}</span>
-                        </button>
-                    ))}
-                </div>
-            )}
-            <div className={isOwner ? "w-2/3" : "w-full"}>
-                {chatPanel}
-            </div>
-        </div>
-    );
-};
-
+// FIX: Added default export for App component to resolve module loading error.
 export default App;
