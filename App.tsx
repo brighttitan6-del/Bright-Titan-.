@@ -1,5 +1,11 @@
 
 
+
+
+
+
+
+
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Role, Subject, VideoLesson, LiveClass, ChatMessage, PaymentRecord, QuizAttempt, Enrollment, LessonCompletion, ActivityType, ActivityLog, Book, SubjectPost, PostType, JobApplication, ApplicationStatus, BookPurchase, ToastMessage, Withdrawal, DirectMessage } from './types';
 import { USERS, SUBJECTS, VIDEO_LESSONS, INITIAL_LIVE_CLASSES, PAYMENT_HISTORY, QUIZZES, QUIZ_ATTEMPTS, ENROLLMENTS, LESSON_COMPLETIONS, ACTIVITY_LOGS, BOOKS, SUBJECT_POSTS, INITIAL_JOB_APPLICATIONS, INITIAL_DIRECT_MESSAGES } from './constants';
@@ -609,6 +615,179 @@ const OwnerDashboard: React.FC<{
         </>
     );
 };
+
+// FIX: Added missing modal component definitions.
+const WithdrawModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    onWithdraw: (amount: number, method: 'Airtel Money' | 'TNM Mpamba', phoneNumber: string) => void;
+    availableBalance: number;
+}> = ({ isOpen, onClose, onWithdraw, availableBalance }) => {
+    const [amount, setAmount] = useState('');
+    const [method, setMethod] = useState<'Airtel Money' | 'TNM Mpamba'>('Airtel Money');
+    const [phoneNumber, setPhoneNumber] = useState('');
+
+    const handleWithdraw = () => {
+        const numAmount = parseFloat(amount);
+        if (numAmount > 0 && numAmount <= availableBalance && phoneNumber.trim()) {
+            onWithdraw(numAmount, method, phoneNumber);
+            setAmount('');
+            setPhoneNumber('');
+        } else {
+            alert('Invalid amount or phone number.');
+        }
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title="Withdraw Funds">
+            <div className="space-y-4">
+                <div className="bg-slate-100 dark:bg-slate-700 p-3 rounded-lg">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Available Balance</p>
+                    <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">MWK {availableBalance.toLocaleString()}</p>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Amount (MWK)</label>
+                    <input
+                        type="number"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        max={availableBalance}
+                        placeholder="0.00"
+                        className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Withdrawal Method</label>
+                    <select
+                        value={method}
+                        onChange={(e) => setMethod(e.target.value as 'Airtel Money' | 'TNM Mpamba')}
+                        className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option>Airtel Money</option>
+                        <option>TNM Mpamba</option>
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Phone Number</label>
+                    <input
+                        type="tel"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        placeholder="e.g., 0991234567"
+                        className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                    <Button variant="secondary" onClick={onClose}>Cancel</Button>
+                    <Button onClick={handleWithdraw}>Confirm Withdrawal</Button>
+                </div>
+            </div>
+        </Modal>
+    );
+};
+
+const AddEditBookModal: React.FC<{
+    book: Book | 'new' | null;
+    onClose: () => void;
+    onAdd: (bookData: Omit<Book, 'id'>) => void;
+    onEdit: (updatedBook: Book) => void;
+}> = ({ book, onClose, onAdd, onEdit }) => {
+    const [title, setTitle] = useState('');
+    const [author, setAuthor] = useState('');
+    const [subject, setSubject] = useState('');
+    const [price, setPrice] = useState('');
+    const isEditing = book && book !== 'new';
+
+    useEffect(() => {
+        if (isEditing) {
+            setTitle(book.title);
+            setAuthor(book.author);
+            setSubject(book.subject);
+            setPrice(String(book.price));
+        } else {
+            setTitle('');
+            setAuthor('');
+            setSubject('');
+            setPrice('');
+        }
+    }, [book, isEditing]);
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const numPrice = parseFloat(price);
+        if (title.trim() && author.trim() && subject.trim() && !isNaN(numPrice)) {
+            if (isEditing) {
+                onEdit({ ...book, title, author, subject, price: numPrice });
+            } else {
+                // The type Omit<Book, 'id'> requires a coverPhoto property.
+                // handleAddBook will generate a new one, so we can pass an empty string.
+                onAdd({ title, author, subject, price: numPrice, coverPhoto: '' });
+            }
+        } else {
+            alert('Please fill all fields correctly.');
+        }
+    };
+    
+    if (!book) return null;
+
+    return (
+        <Modal isOpen={!!book} onClose={onClose} title={isEditing ? 'Edit Book' : 'Add New Book'}>
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Book Title</label>
+                    <input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Author</label>
+                    <input type="text" value={author} onChange={e => setAuthor(e.target.value)} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Subject</label>
+                    <input type="text" value={subject} onChange={e => setSubject(e.target.value)} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Price (MWK)</label>
+                    <input type="number" value={price} onChange={e => setPrice(e.target.value)} className="w-full px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                    <Button variant="secondary" onClick={onClose}>Cancel</Button>
+                    <Button type="submit">{isEditing ? 'Save Changes' : 'Add Book'}</Button>
+                </div>
+            </form>
+        </Modal>
+    );
+};
+
+const DeleteConfirmationModal: React.FC<{
+    item: { id: string } | null;
+    onClose: () => void;
+    onConfirm: () => void;
+    itemName?: string;
+    itemType: string;
+}> = ({ item, onClose, onConfirm, itemName, itemType }) => {
+    if (!item) return null;
+
+    return (
+        <Modal isOpen={!!item} onClose={onClose} title={`Confirm Deletion`}>
+            <div className="text-center">
+                <ExclamationTriangleIcon className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Are you sure?</h3>
+                <p className="text-slate-600 dark:text-slate-300 mt-2">
+                    Do you really want to delete this {itemType}?
+                    {itemName && <span className="font-bold block mt-1">"{itemName}"</span>}
+                </p>
+                <p className="text-sm text-slate-500 mt-2">This process cannot be undone.</p>
+                <div className="flex justify-center gap-4 mt-6">
+                    <Button variant="secondary" onClick={onClose}>Cancel</Button>
+                    <Button onClick={onConfirm} className="!bg-red-500 hover:!bg-red-600 focus:!ring-red-300">
+                        Yes, Delete
+                    </Button>
+                </div>
+            </div>
+        </Modal>
+    );
+};
+
 
 // FIX: Added `allUsers` to the props for `TeacherDashboard` to fix a scope issue.
 const TeacherDashboard: React.FC<{ 
@@ -2564,7 +2743,7 @@ const StudentProgressScreen: React.FC<{
     
     const recentlyCompleted = lessonCompletions
         .filter(c => c.studentId === user.id)
-        .sort((a,b) => b.completedAt.getTime() - a.completedAt.getTime())
+        .sort((a,b) => b.completedAt.getTime() - a.timestamp.getTime())
         .slice(0, 3)
         .map(c => allLessons.find(l => l.id === c.lessonId))
         .filter((l): l is VideoLesson => l !== undefined);
@@ -2811,14 +2990,32 @@ const App: React.FC = () => {
     };
     
     const handleApplyForJob = (name: string, email: string, phoneNumber: string, subjects: string[], cvFile: File | null) => {
-      const newApp: JobApplication = {
-          id: `app-${Date.now()}`, name, email, phoneNumber, subjects,
-          status: ApplicationStatus.Pending, timestamp: new Date(),
-          cvFileName: cvFile?.name,
-      };
-      setJobApplications(prev => [newApp, ...prev]);
-      addToast('Your application has been submitted successfully!', 'success');
-  };
+        const createApplication = (cvDataUrl?: string) => {
+            const newApp: JobApplication = {
+                id: `app-${Date.now()}`,
+                name,
+                email,
+                phoneNumber,
+                subjects,
+                status: ApplicationStatus.Pending,
+                timestamp: new Date(),
+                cvFileName: cvFile?.name,
+                cvDataUrl,
+            };
+            setJobApplications(prev => [newApp, ...prev]);
+            addToast('Your application has been submitted successfully!', 'success');
+        };
+
+        if (cvFile) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                createApplication(reader.result as string);
+            };
+            reader.readAsDataURL(cvFile);
+        } else {
+            createApplication();
+        }
+    };
     
     // Teacher handlers
     const handleAddStudent = (name: string, email: string, subjectIds: string[]) => {
@@ -3044,6 +3241,19 @@ const App: React.FC = () => {
 const ApplicationDetailModal: React.FC<{ application: JobApplication | null, onClose: () => void }> = ({ application, onClose }) => {
     if (!application) return null;
 
+    const handleDownloadCv = () => {
+        if (application.cvDataUrl && application.cvFileName) {
+            const link = document.createElement('a');
+            link.href = application.cvDataUrl;
+            link.download = application.cvFileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } else {
+            alert('CV data is not available for download.');
+        }
+    };
+
     const DetailItem: React.FC<{ icon: React.ReactNode, label: string, value: string }> = ({ icon, label, value }) => (
         <div className="flex items-start gap-3">
             <div className="text-slate-400 mt-1">{icon}</div>
@@ -3062,7 +3272,7 @@ const ApplicationDetailModal: React.FC<{ application: JobApplication | null, onC
                 <DetailItem icon={<BookOpenIcon className="w-5 h-5"/>} label="Subjects" value={application.subjects.join(', ')} />
                 {application.cvFileName && (
                     <div className="pt-2">
-                        <Button variant="secondary" className="w-full" onClick={() => alert(`Downloading ${application.cvFileName}...`)}>
+                        <Button variant="secondary" className="w-full" onClick={handleDownloadCv}>
                             <div className="flex items-center justify-center gap-2">
                                 <DocumentTextIcon className="w-5 h-5" />
                                 Download CV ({application.cvFileName})
