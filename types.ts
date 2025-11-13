@@ -142,6 +142,7 @@ export enum ActivityType {
   NewQuizCreated = 'New Quiz Created',
   NewBookPurchase = 'New Book Purchase',
   LiveClassStarted = 'Live Class Started',
+  NewApplication = 'New Job Application',
 }
 
 export interface ActivityLog {
@@ -165,6 +166,11 @@ export interface Book {
 export interface BookPurchase {
     studentId: string;
     bookId: string;
+}
+
+export interface LessonBookmark {
+    studentId: string;
+    lessonId: string;
 }
 
 export enum PostType {

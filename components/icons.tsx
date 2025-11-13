@@ -240,6 +240,13 @@ export const BookOpenIcon = ({ className, title }: IconProps) => (
     </svg>
 );
 
+export const BookmarkIcon = ({ className, title, filled = false }: IconProps & { filled?: boolean }) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill={filled ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
+        {title && <title>{title}</title>}
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+    </svg>
+);
+
 export const DocumentCheckIcon = ({ className, title }: IconProps) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         {title && <title>{title}</title>}

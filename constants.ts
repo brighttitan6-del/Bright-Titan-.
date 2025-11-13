@@ -1,4 +1,4 @@
-import { Role, User, Subject, VideoLesson, LiveClass, PaymentRecord, Quiz, QuizAttempt, Enrollment, LessonCompletion, ActivityLog, ActivityType, Book, SubjectPost, PostType, JobApplication, ApplicationStatus, DirectMessage, ExaminationQuestion, Examination, ExaminationAttempt, SubscriptionPlan, BookPurchase } from './types';
+import { Role, User, Subject, VideoLesson, LiveClass, PaymentRecord, Quiz, QuizAttempt, Enrollment, LessonCompletion, ActivityLog, ActivityType, Book, SubjectPost, PostType, JobApplication, ApplicationStatus, DirectMessage, ExaminationQuestion, Examination, ExaminationAttempt, SubscriptionPlan, BookPurchase, Withdrawal, LessonBookmark } from './types';
 
 export const USERS: User[] = [
   // Student with an expired weekly plan
@@ -46,8 +46,8 @@ export const USERS: User[] = [
       endDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000), // Expires in 25 days
     }
   },
-  { id: 'user-7', name: 'Mr. Nyalugwe', email: 'owner@example.com', role: Role.Owner, profilePicture: 'https://i.pravatar.cc/150?u=user-7', password: 'ownerpassword' },
-  { id: 'user-8', name: 'Bright Nason (Teacher)', email: 'teacher@example.com', role: Role.Teacher, profilePicture: 'https://i.pravatar.cc/150?u=user-8', password: 'teacherpassword' },
+  { id: 'user-7', name: 'Bright Nason (Owner)', email: 'brightnason19@gmail.com', role: Role.Owner, profilePicture: 'https://i.pravatar.cc/150?u=user-7', password: 'grax2650' },
+  { id: 'user-8', name: 'Bright Nason (Teacher)', email: 'brightnason19@gmail.com', role: Role.Teacher, profilePicture: 'https://i.pravatar.cc/150?u=user-8', password: 'grax2650' },
   // Student with an expired daily plan to verify 24-hour access lock
   { 
     id: 'user-9', 
@@ -150,6 +150,11 @@ export const BOOKS: Book[] = [
 
 export const BOOK_PURCHASES: BookPurchase[] = [];
 
+export const BOOKMARKS: LessonBookmark[] = [
+    { studentId: 'user-6', lessonId: 'vl-3' },
+    { studentId: 'user-6', lessonId: 'vl-5' },
+];
+
 export const SUBJECT_POSTS: SubjectPost[] = [
     { id: 'post-1', subjectId: 'subj-1', teacherId: 'user-8', teacherName: 'Bright Nason (Teacher)', teacherProfilePic: 'https://i.pravatar.cc/150?u=user-8', type: PostType.Announcement, text: 'Welcome to Mathematics class! Please review the syllabus in the course materials section.', timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) },
     { id: 'post-2', subjectId: 'subj-1', teacherId: 'user-8', teacherName: 'Bright Nason (Teacher)', teacherProfilePic: 'https://i.pravatar.cc/150?u=user-8', type: PostType.Question, text: 'Quiz on Friday will cover the first two lessons. Any questions?', timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) },
@@ -198,4 +203,10 @@ export const EXAMINATION_ATTEMPTS: ExaminationAttempt[] = [
     //     },
     //     completedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
     // }
+];
+
+export const WITHDRAWALS: Withdrawal[] = [
+  { id: 'wd-1', amount: 15000, method: 'Airtel Money', phoneNumber: '0991234567', timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) },
+  { id: 'wd-2', amount: 25000, method: 'TNM Mpamba', phoneNumber: '0888765432', timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) },
+  { id: 'wd-3', amount: 8000, method: 'Airtel Money', phoneNumber: '0999876543', timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) },
 ];
