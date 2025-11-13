@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Role, Subject, VideoLesson, LiveClass, ChatMessage, PaymentRecord, QuizAttempt, Enrollment, LessonCompletion, ActivityType, ActivityLog, Book, SubjectPost, PostType, JobApplication, ApplicationStatus, BookPurchase, ToastMessage, Withdrawal, DirectMessage, Examination, ExaminationAttempt, ExaminationQuestion, Quiz, SubscriptionPlan, StudentSubscription, LessonBookmark, BookReading } from './types';
-import { USERS, SUBJECTS, VIDEO_LESSONS, INITIAL_LIVE_CLASSES, PAYMENT_HISTORY, QUIZZES, QUIZ_ATTEMPTS, ENROLLMENTS, LESSON_COMPLETIONS, ACTIVITY_LOGS, BOOKS, SUBJECT_POSTS, INITIAL_JOB_APPLICATIONS, INITIAL_DIRECT_MESSAGES, EXAMINATIONS, EXAMINATION_ATTEMPTS, BOOK_PURCHASES, WITHDRAWALS, BOOKMARKS, BOOK_READINGS } from './constants';
+import { User, Role, Subject, VideoLesson, LiveClass, ChatMessage, PaymentRecord, QuizAttempt, Enrollment, LessonCompletion, ActivityType, ActivityLog, Book, SubjectPost, PostType, JobApplication, ApplicationStatus, BookPurchase, ToastMessage, Withdrawal, DirectMessage, Examination, ExaminationAttempt, ExaminationQuestion, Quiz, SubscriptionPlan, StudentSubscription, LessonBookmark, BookReading, PostComment } from './types';
+import { USERS, SUBJECTS, VIDEO_LESSONS, INITIAL_LIVE_CLASSES, PAYMENT_HISTORY, QUIZZES, QUIZ_ATTEMPTS, ENROLLMENTS, LESSON_COMPLETIONS, ACTIVITY_LOGS, BOOKS, SUBJECT_POSTS, INITIAL_JOB_APPLICATIONS, INITIAL_DIRECT_MESSAGES, EXAMINATIONS, EXAMINATION_ATTEMPTS, BOOK_PURCHASES, WITHDRAWALS, BOOKMARKS, BOOK_READINGS, POST_COMMENTS } from './constants';
 import { runAiTutor, generateQuizOptions } from './services/geminiService';
 // FIX: Added InformationCircleIcon to the import to fix a missing component error.
-import { UserCircleIcon, BellIcon, ArrowLeftIcon, SearchIcon, VideoCameraIcon, ClockIcon, SendIcon, SparklesIcon, WalletIcon, CheckCircleIcon, CheckBadgeIcon, AirtelMoneyIcon, TnmMpambaIcon, NationalBankIcon, StarIcon, UserGroupIcon, ChartBarIcon, PencilIcon, PlusIcon, ExclamationTriangleIcon, CloseIcon, LockClosedIcon, Cog6ToothIcon, CameraIcon, BookOpenIcon, DocumentCheckIcon, CloudArrowUpIcon, TrashIcon, RssIcon, XCircleIcon, ComputerDesktopIcon, MicrophoneIcon, VideoCameraSlashIcon, ChevronUpIcon, WifiIcon, EyeIcon, BuildingStorefrontIcon, LightBulbIcon, QuestionMarkCircleIcon, ChatBubbleLeftRightIcon, PlayIcon, PauseIcon, SpeakerWaveIcon, SpeakerXMarkIcon, ArrowsPointingOutIcon, ArrowsPointingInIcon, GoogleIcon, EnvelopeIcon, UserIcon, PhoneIcon, DocumentTextIcon, HomeIcon, AcademicCapIcon, ShoppingCartIcon, SmartLearnLogo, BriefcaseIcon, ShieldCheckIcon, CurrencyDollarIcon, UsersIcon, BanknotesIcon, CalendarDaysIcon, TrophyIcon, ClipboardDocumentCheckIcon, BookmarkIcon, InformationCircleIcon } from './components/icons';
+import { UserCircleIcon, BellIcon, ArrowLeftIcon, SearchIcon, VideoCameraIcon, ClockIcon, SendIcon, SparklesIcon, WalletIcon, CheckCircleIcon, CheckBadgeIcon, AirtelMoneyIcon, TnmMpambaIcon, NationalBankIcon, StarIcon, UserGroupIcon, ChartBarIcon, PencilIcon, PlusIcon, ExclamationTriangleIcon, CloseIcon, LockClosedIcon, Cog6ToothIcon, CameraIcon, BookOpenIcon, DocumentCheckIcon, CloudArrowUpIcon, TrashIcon, RssIcon, XCircleIcon, ComputerDesktopIcon, MicrophoneIcon, VideoCameraSlashIcon, ChevronUpIcon, WifiIcon, EyeIcon, BuildingStorefrontIcon, LightBulbIcon, QuestionMarkCircleIcon, ChatBubbleLeftRightIcon, PlayIcon, PauseIcon, SpeakerWaveIcon, SpeakerXMarkIcon, ArrowsPointingOutIcon, ArrowsPointingInIcon, GoogleIcon, EnvelopeIcon, UserIcon, PhoneIcon, DocumentTextIcon, HomeIcon, AcademicCapIcon, ShoppingCartIcon, SmartLearnLogo, BriefcaseIcon, ShieldCheckIcon, CurrencyDollarIcon, UsersIcon, BanknotesIcon, CalendarDaysIcon, TrophyIcon, ClipboardDocumentCheckIcon, BookmarkIcon, InformationCircleIcon, ChatBubbleOvalLeftEllipsisIcon } from './components/icons';
 import { Button, Modal, ToastContainer, PaymentModal } from './components/common';
 
 const APP_OWNER_ID = 'user-7'; // Mr. Nyalugwe's ID
@@ -25,13 +25,13 @@ const getSubscriptionStatus = (user: User | null): { status: SubscriptionStatus;
 
 const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    const secs = Math.floor(seconds % 60);
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
 // ----- Reusable Components -----
 
-const InputWithIcon: React.FC<{ icon: React.ReactNode, type: string, placeholder: string, value: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void, required?: boolean }> = ({ icon, ...props }) => (
+const InputWithIcon: React.FC<{ icon: React.ReactNode, type: string, placeholder: string, value: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void, required?: boolean, name?: string }> = ({ icon, ...props }) => (
     <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             {icon}
@@ -115,6 +115,20 @@ const AuthScreen: React.FC<{
                             </form>
                         )
                     )}
+                    
+                    {!isManager && (
+                         <div className="relative flex py-5 items-center">
+                            <div className="flex-grow border-t border-slate-200"></div>
+                            <span className="flex-shrink mx-4 text-slate-400 text-sm">OR</span>
+                            <div className="flex-grow border-t border-slate-200"></div>
+                        </div>
+                    )}
+                    
+                    {!isManager && (
+                        <Button onClick={onGoogleAuth} variant="secondary" className="w-full flex items-center justify-center gap-2">
+                           <GoogleIcon className="w-5 h-5" /> Sign in with Google
+                        </Button>
+                    )}
                 </div>
             </div>
         );
@@ -161,25 +175,24 @@ const StatCard: React.FC<{ icon: React.ReactElement<{ className?: string }>; tit
 interface HeaderProps {
   user: User;
   onLogout: () => void;
-  currentView: string;
+  title: string;
   onBack?: () => void;
   onNavigateToSettings: () => void;
   unreadCount: number;
   onToggleNotifications: () => void;
 }
-const Header: React.FC<HeaderProps> = ({ user, onLogout, currentView, onBack, onNavigateToSettings, unreadCount, onToggleNotifications }) => {
-  const showBackButton = currentView !== 'dashboard';
-
+const Header: React.FC<HeaderProps> = ({ user, onLogout, title, onBack, onNavigateToSettings, unreadCount, onToggleNotifications }) => {
   return (
     <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-sm p-4 sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 dark:border-slate-700">
       <div className="flex items-center gap-4">
-        {showBackButton && onBack ? (
+        {onBack ? (
           <button onClick={onBack} className="text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400" aria-label="Go back">
             <ArrowLeftIcon className="w-6 h-6" />
           </button>
         ) : (
-            <h1 className="text-xl font-bold text-teal-600 dark:text-teal-400">SmartLearn</h1>
+            <SmartLearnLogo className="w-8 h-8" />
         )}
+         <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">{title}</h1>
       </div>
       <div className="flex items-center gap-4">
         <button onClick={onToggleNotifications} className="text-slate-500 dark:text-slate-400 relative" aria-label="View notifications">
@@ -195,10 +208,6 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, currentView, onBack, on
             ) : (
                 <UserCircleIcon className="w-8 h-8 text-slate-400" />
             )}
-          <div>
-            <p className="font-semibold text-sm text-slate-700 dark:text-slate-200">{user.name}</p>
-            <button onClick={onLogout} className="text-xs text-slate-500 dark:text-slate-400 hover:underline">Logout</button>
-          </div>
         </div>
       </div>
     </header>
@@ -267,24 +276,15 @@ const StudentDashboard: React.FC<{
     allSubjects: Subject[];
     allLessons: VideoLesson[];
     allLiveClasses: LiveClass[];
-    lessonCompletions: LessonCompletion[];
     bookmarks: LessonBookmark[];
     activeLiveClass: LiveClass | null;
-    onSelectSubject: (subject: Subject) => void; 
     onJoinLiveClass: (liveClass: LiveClass) => void;
     onPayForLessons: () => void;
     onWatchLesson: (lesson: VideoLesson) => void;
     onNavigate: (view: string) => void;
-}> = ({ user, subscriptionStatus, subscriptionPlan, allSubjects, allLessons, allLiveClasses, lessonCompletions, bookmarks, activeLiveClass, onSelectSubject, onJoinLiveClass, onPayForLessons, onWatchLesson, onNavigate }) => {
-    const [searchTerm, setSearchTerm] = useState('');
+}> = ({ user, subscriptionStatus, subscriptionPlan, allSubjects, allLessons, allLiveClasses, bookmarks, activeLiveClass, onJoinLiveClass, onPayForLessons, onWatchLesson, onNavigate }) => {
     const recentLessons = allLessons.slice(0, 4);
     const hasActiveSubscription = subscriptionStatus === 'Active';
-
-    const filteredSubjects = allSubjects.filter(s => 
-        s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        s.teacherName.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
     const userBookmarks = bookmarks.filter(b => b.studentId === user.id);
 
     return (
@@ -307,17 +307,6 @@ const StudentDashboard: React.FC<{
                     <Button className="py-2 px-4 text-sm !bg-white !text-red-600 hover:!bg-red-50 focus:!ring-red-200">Join Now</Button>
                 </div>
             )}
-            
-            <div className="relative">
-                <input 
-                    type="text"
-                    placeholder="Search subjects or teachers..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                />
-                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            </div>
             
             {!hasActiveSubscription && <PaymentPrompt onPay={onPayForLessons} status={subscriptionStatus} plan={subscriptionPlan} />}
 
@@ -393,73 +382,46 @@ const StudentDashboard: React.FC<{
                 </>
             ) : null }
 
-            <div>
-                <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Your Subjects</h2>
-                <div className="grid grid-cols-2 gap-4">
-                    {filteredSubjects.map(subject => {
-                         const lessonsForSubject = allLessons.filter(l => l.subjectId === subject.id);
-                         const completedLessonsCount = lessonCompletions.filter(
-                             c => c.studentId === user.id && lessonsForSubject.some(l => l.id === c.lessonId)
-                         ).length;
-                         const progress = lessonsForSubject.length > 0 
-                             ? Math.round((completedLessonsCount / lessonsForSubject.length) * 100) 
-                             : 0;
-                        const isLiveNow = activeLiveClass?.subjectId === subject.id;
-
-                        return (
-                            <SubjectCard 
-                                key={subject.id} 
-                                subject={subject} 
-                                onClick={() => onSelectSubject(subject)} 
-                                progress={progress}
-                                isLocked={!hasActiveSubscription}
-                                isLive={isLiveNow}
-                            />
-                        );
-                    })}
-                </div>
-            </div>
-
-            {hasActiveSubscription && (
-                <div className="mt-6">
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Resources</h2>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div
-                            onClick={() => onNavigate('bookstore')}
-                            className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-md flex items-center gap-4 cursor-pointer hover-lift"
-                        >
-                            <div className="bg-orange-100 dark:bg-orange-500/20 p-3 rounded-full">
-                                <BuildingStorefrontIcon className="w-8 h-8 text-orange-500" />
-                            </div>
-                            <div>
-                                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">Bookstore</h3>
-                                <p className="text-slate-500 dark:text-slate-400">Browse and purchase textbooks.</p>
-                            </div>
+            <div className="mt-6">
+                <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">More Resources</h2>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div
+                        onClick={() => onNavigate('bookstore')}
+                        className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-md flex items-center gap-4 cursor-pointer hover-lift"
+                    >
+                        <div className="bg-orange-100 dark:bg-orange-500/20 p-3 rounded-full">
+                            <BuildingStorefrontIcon className="w-8 h-8 text-orange-500" />
                         </div>
-                         <div
-                            onClick={() => onNavigate('examinations')}
-                            className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-md flex items-center gap-4 cursor-pointer hover-lift"
-                        >
-                            <div className="bg-indigo-100 dark:bg-indigo-500/20 p-3 rounded-full">
-                                <TrophyIcon className="w-8 h-8 text-indigo-500" />
-                            </div>
-                            <div>
-                                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">Examinations</h3>
-                                <p className="text-slate-500 dark:text-slate-400">Test your knowledge.</p>
-                            </div>
+                        <div>
+                            <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">Bookstore</h3>
+                            <p className="text-slate-500 dark:text-slate-400">Browse and purchase textbooks.</p>
+                        </div>
+                    </div>
+                     <div
+                        onClick={() => onNavigate('examinations')}
+                        className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-md flex items-center gap-4 cursor-pointer hover-lift"
+                    >
+                        <div className="bg-indigo-100 dark:bg-indigo-500/20 p-3 rounded-full">
+                            <TrophyIcon className="w-8 h-8 text-indigo-500" />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">Examinations</h3>
+                            <p className="text-slate-500 dark:text-slate-400">Test your knowledge.</p>
                         </div>
                     </div>
                 </div>
-            )}
+            </div>
         </div>
     );
 };
 
-const ActivityFeed: React.FC<{ logs: ActivityLog[], users: User[] }> = ({ logs, users }) => {
+const ActivityFeed: React.FC<{ logs: ActivityLog[], title?: string }> = ({ logs, title = "Recent Activity" }) => {
     const getLogIcon = (type: ActivityType) => {
         const iconClass = "w-5 h-5";
         switch (type) {
-            case ActivityType.NewEnrollment: return <UserGroupIcon className={`${iconClass} text-teal-500`} />;
+            case ActivityType.NewEnrollment:
+            case ActivityType.NewEnrollmentInClass:
+                return <UserGroupIcon className={`${iconClass} text-teal-500`} />;
             case ActivityType.QuizSubmission: return <CheckCircleIcon className={`${iconClass} text-green-500`} />;
             case ActivityType.NewLesson: return <VideoCameraIcon className={`${iconClass} text-purple-500`} />;
             case ActivityType.LiveClassStarted:
@@ -470,13 +432,17 @@ const ActivityFeed: React.FC<{ logs: ActivityLog[], users: User[] }> = ({ logs, 
             case ActivityType.NewBookReading: return <BookOpenIcon className={`${iconClass} text-cyan-500`} />;
             case ActivityType.NewExamination: return <TrophyIcon className={`${iconClass} text-indigo-500`} />;
             case ActivityType.ExaminationSubmission: return <ClipboardDocumentCheckIcon className={`${iconClass} text-green-500`} />;
+            case ActivityType.NewDirectMessage: return <EnvelopeIcon className={`${iconClass} text-blue-500`} />;
+            case ActivityType.NewPostComment:
+            case ActivityType.NewCommentOnPostTeacher:
+                 return <ChatBubbleLeftRightIcon className={`${iconClass} text-yellow-500`} />;
             default: return null;
         }
     };
 
     return (
         <div>
-            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Recent Activity</h2>
+            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">{title}</h2>
             <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm space-y-3 max-h-60 overflow-y-auto">
                 {logs.length > 0 ? logs.sort((a,b) => b.timestamp.getTime() - a.timestamp.getTime()).map(log => (
                      <div key={log.id} className="flex items-start gap-3">
@@ -600,19 +566,16 @@ const CreatePostModal: React.FC<{
 const TeacherDashboard: React.FC<{
     user: User;
     subjects: Subject[];
-    lessons: VideoLesson[];
+    activityLogs: ActivityLog[];
     onStartLiveClass: (subjectId: string, title: string) => void;
     onUploadLesson: (data: Omit<VideoLesson, 'id' | 'thumbnail'>) => void;
     onCreatePost: (data: { subjectId: string; type: PostType; text: string }) => void;
-}> = ({ user, subjects, lessons, onStartLiveClass, onUploadLesson, onCreatePost }) => {
+}> = ({ user, subjects, activityLogs, onStartLiveClass, onUploadLesson, onCreatePost }) => {
     const [liveClassModalOpen, setLiveClassModalOpen] = useState(false);
     const [uploadModalOpen, setUploadModalOpen] = useState(false);
     const [postModalOpen, setPostModalOpen] = useState(false);
     const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
     const [liveClassTitle, setLiveClassTitle] = useState('');
-
-    const teacherLessonIds = new Set(subjects.map(s => s.id));
-    const myLessons = lessons.filter(l => teacherLessonIds.has(l.subjectId));
 
     const handleOpenModal = (subject: Subject) => {
         setSelectedSubject(subject);
@@ -634,11 +597,6 @@ const TeacherDashboard: React.FC<{
 
     return (
         <div className="p-4 text-slate-800 dark:text-slate-100 animate-fade-in-up space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold">Teacher Dashboard</h1>
-                <p className="text-slate-500 dark:text-slate-400">Welcome, {user.name}. Manage your subjects and content here.</p>
-            </div>
-
             <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm flex items-center gap-4">
                 <h2 className="text-xl font-bold">Quick Actions</h2>
                 <Button onClick={() => setUploadModalOpen(true)} variant="secondary" className="flex items-center gap-2">
@@ -651,6 +609,8 @@ const TeacherDashboard: React.FC<{
             
             <UploadLessonModal isOpen={uploadModalOpen} onClose={() => setUploadModalOpen(false)} onSubmit={onUploadLesson} teacherSubjects={subjects} />
             <CreatePostModal isOpen={postModalOpen} onClose={() => setPostModalOpen(false)} onSubmit={onCreatePost} teacherSubjects={subjects} />
+            
+            <ActivityFeed logs={activityLogs} title="Your Recent Activity"/>
 
             <div>
                 <h2 className="text-xl font-bold mb-4">Your Subjects</h2>
@@ -672,23 +632,6 @@ const TeacherDashboard: React.FC<{
                 ) : (
                     <p className="text-slate-500 dark:text-slate-400">You are not assigned to any subjects yet.</p>
                 )}
-            </div>
-            
-             <div>
-                <h2 className="text-xl font-bold mb-4">My Uploaded Lessons</h2>
-                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm space-y-3">
-                    {myLessons.length > 0 ? myLessons.map(lesson => (
-                        <div key={lesson.id} className="flex items-center gap-4">
-                            <img src={lesson.thumbnail} alt={lesson.title} className="w-20 h-12 object-cover rounded" />
-                            <div>
-                                <h4 className="font-semibold">{lesson.title}</h4>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">{subjects.find(s=>s.id === lesson.subjectId)?.name} - {lesson.duration}</p>
-                            </div>
-                        </div>
-                    )) : (
-                        <p className="text-slate-500 dark:text-slate-400">You haven't uploaded any lessons yet.</p>
-                    )}
-                </div>
             </div>
 
             {selectedSubject && (
@@ -712,6 +655,63 @@ const TeacherDashboard: React.FC<{
     );
 };
 
+// FIX: Moved WithdrawalModal outside of the App component and passed addToast as a prop to resolve scoping issues.
+const WithdrawalModal: React.FC<{isOpen: boolean, onClose: () => void, onWithdraw: (w: Omit<Withdrawal, 'id' | 'timestamp'>) => void, balance: number, addToast: (message: string, type?: 'success' | 'error' | 'info') => void}> = ({isOpen, onClose, onWithdraw, balance, addToast}) => {
+    const [method, setMethod] = useState<'Airtel Money' | 'TNM Mpamba' | 'Bank'>('Airtel Money');
+    const [amount, setAmount] = useState('');
+    const [details, setDetails] = useState({ phone: '', bankName: '', accountNumber: '' });
+    
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const numAmount = parseFloat(amount);
+        if (!numAmount || numAmount <= 0 || numAmount > balance) {
+            addToast("Invalid amount.", "error");
+            return;
+        }
+
+        let withdrawalData: Omit<Withdrawal, 'id' | 'timestamp'>;
+        if (method === 'Bank') {
+            if (!details.bankName || !details.accountNumber) {
+                 addToast("Bank details are required.", "error");
+                return;
+            }
+            withdrawalData = { amount: numAmount, method, bankName: details.bankName, accountNumber: details.accountNumber };
+        } else {
+             if (!details.phone) {
+                 addToast("Phone number is required.", "error");
+                return;
+            }
+            withdrawalData = { amount: numAmount, method, phoneNumber: details.phone };
+        }
+        onWithdraw(withdrawalData);
+        onClose();
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title="Make a Withdrawal">
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <p>Available Balance: <strong>K{balance.toLocaleString()}</strong></p>
+                <InputWithIcon icon={<BanknotesIcon className="w-5 h-5 text-slate-400" />} type="number" placeholder="Amount" value={amount} onChange={e => setAmount(e.target.value)} required />
+                <select value={method} onChange={e => setMethod(e.target.value as any)} className="w-full px-4 py-3 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    <option>Airtel Money</option>
+                    <option>TNM Mpamba</option>
+                    <option>Bank</option>
+                </select>
+
+                {method === 'Bank' ? (
+                    <>
+                        <InputWithIcon icon={<BuildingStorefrontIcon className="w-5 h-5 text-slate-400" />} type="text" placeholder="Bank Name" value={details.bankName} onChange={e => setDetails({...details, bankName: e.target.value})} required />
+                        <InputWithIcon icon={<WalletIcon className="w-5 h-5 text-slate-400" />} type="text" placeholder="Account Number" value={details.accountNumber} onChange={e => setDetails({...details, accountNumber: e.target.value})} required />
+                    </>
+                ) : (
+                    <InputWithIcon icon={<PhoneIcon className="w-5 h-5 text-slate-400" />} type="tel" placeholder="Phone Number" value={details.phone} onChange={e => setDetails({...details, phone: e.target.value})} required />
+                )}
+                <Button type="submit" className="w-full">Confirm Withdrawal</Button>
+            </form>
+        </Modal>
+    )
+}
+
 const OwnerDashboard: React.FC<{
     user: User;
     allUsers: User[];
@@ -721,9 +721,13 @@ const OwnerDashboard: React.FC<{
     applications: JobApplication[];
     activityLogs: ActivityLog[];
     onUpdateApplicationStatus: (id: string, status: ApplicationStatus) => void;
-    onInitiateDeposit: (amount: number, method: 'Airtel Money' | 'TNM Mpamba') => void;
-}> = ({ user, allUsers, payments, withdrawals, messages, applications, activityLogs, onUpdateApplicationStatus, onInitiateDeposit }) => {
+    onWithdraw: (withdrawal: Omit<Withdrawal, 'id' | 'timestamp'>) => void;
+    onViewUser: (user: User) => void;
+    addToast: (message: string, type?: 'success' | 'error' | 'info') => void;
+}> = ({ user, allUsers, payments, withdrawals, messages, applications, activityLogs, onUpdateApplicationStatus, onWithdraw, onViewUser, addToast }) => {
     const [activeTab, setActiveTab] = useState('Dashboard');
+    const [isWithdrawalModalOpen, setWithdrawalModalOpen] = useState(false);
+    const [selectedConversation, setSelectedConversation] = useState<{ user1: User, user2: User } | null>(null);
     const tabs = ['Dashboard', 'Students', 'Teachers', 'Finance', 'Communication', 'Applications'];
 
     const TabButton: React.FC<{ name: string }> = ({ name }) => (
@@ -748,7 +752,7 @@ const OwnerDashboard: React.FC<{
                     <StatCard icon={<BanknotesIcon />} title="Total Revenue" value={`K${payments.reduce((sum, p) => sum + p.amount, 0).toLocaleString()}`} gradient="text-white bg-gradient-to-br from-green-500 to-emerald-600" />
                     <StatCard icon={<RssIcon />} title="Active Plans" value={students.filter(s => getSubscriptionStatus(s).status === 'Active').length} gradient="text-white bg-gradient-to-br from-purple-500 to-violet-600" />
                 </div>
-                <ActivityFeed logs={activityLogs} users={allUsers} />
+                <ActivityFeed logs={activityLogs.filter(log => log.userId === APP_OWNER_ID)} />
             </div>
          );
     };
@@ -770,7 +774,7 @@ const OwnerDashboard: React.FC<{
                             <tr key={u.id} className="border-b dark:border-slate-700">
                                 <td className="p-2 font-medium">{u.name}</td>
                                 <td className="p-2 text-slate-500">{u.email}</td>
-                                <td className="p-2"><Button variant="secondary" className="!py-1 !px-3 text-xs">View</Button></td>
+                                <td className="p-2"><Button onClick={() => onViewUser(u)} variant="secondary" className="!py-1 !px-3 text-xs">View</Button></td>
                             </tr>
                         ))}
                     </tbody>
@@ -780,41 +784,21 @@ const OwnerDashboard: React.FC<{
     );
     
     const FinanceTabContent = () => {
-        const [depositAmount, setDepositAmount] = useState('');
         const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
         const totalWithdrawals = withdrawals.reduce((sum, w) => sum + w.amount, 0);
         const availableBalance = totalRevenue - totalWithdrawals;
 
-        const handleDeposit = (method: 'Airtel Money' | 'TNM Mpamba') => {
-            const amount = parseFloat(depositAmount);
-            if (!amount || amount <= 0) {
-                alert("Please enter a valid amount.");
-                return;
-            }
-            if (amount > availableBalance) {
-                alert("Deposit amount cannot exceed available balance.");
-                return;
-            }
-            onInitiateDeposit(amount, method);
-            setDepositAmount('');
-        }
-
         return (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                  <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm lg:col-span-2">
-                    <h2 className="text-xl font-bold mb-4">Platform Balance & Deposits</h2>
+                    <h2 className="text-xl font-bold mb-4">Platform Balance & Withdrawals</h2>
                     <div className="grid grid-cols-3 gap-4 text-center mb-6">
                         <div><p className="text-slate-500">Total Revenue</p><p className="text-2xl font-bold text-green-600">K{totalRevenue.toLocaleString()}</p></div>
                         <div><p className="text-slate-500">Total Withdrawals</p><p className="text-2xl font-bold text-red-600">K{totalWithdrawals.toLocaleString()}</p></div>
                         <div><p className="text-slate-500">Available Balance</p><p className="text-2xl font-bold text-blue-600">K{availableBalance.toLocaleString()}</p></div>
                     </div>
-                     <div className="border-t dark:border-slate-700 pt-4">
-                        <h3 className="font-semibold mb-2">Initiate Deposit</h3>
-                         <div className="flex items-center gap-4">
-                            <InputWithIcon icon={<BanknotesIcon className="w-5 h-5 text-slate-400" />} type="number" placeholder="Amount to deposit" value={depositAmount} onChange={e => setDepositAmount(e.target.value)} />
-                             <Button onClick={() => handleDeposit('Airtel Money')} disabled={!depositAmount || parseFloat(depositAmount) > availableBalance}>To Airtel</Button>
-                             <Button onClick={() => handleDeposit('TNM Mpamba')} disabled={!depositAmount || parseFloat(depositAmount) > availableBalance}>To TNM</Button>
-                        </div>
+                     <div className="border-t dark:border-slate-700 pt-4 flex justify-end">
+                        <Button onClick={() => setWithdrawalModalOpen(true)} disabled={availableBalance <= 0}>Make a Withdrawal</Button>
                     </div>
                 </div>
 
@@ -834,35 +818,92 @@ const OwnerDashboard: React.FC<{
                      <div className="space-y-3 max-h-96 overflow-y-auto">
                         {withdrawals.sort((a,b) => b.timestamp.getTime() - a.timestamp.getTime()).map(w => (
                             <div key={w.id} className="flex justify-between items-center">
-                                <div><p className="font-semibold">{w.method} - {w.phoneNumber}</p><p className="text-xs text-slate-500">{w.timestamp.toLocaleString()}</p></div>
+                                <div><p className="font-semibold">{w.method} - {w.method === 'Bank' ? w.accountNumber : w.phoneNumber}</p><p className="text-xs text-slate-500">{w.timestamp.toLocaleString()}</p></div>
                                 <div className="text-right"><p className="font-bold text-red-600 dark:text-red-400">-K{w.amount.toLocaleString()}</p></div>
                             </div>
                         ))}
                     </div>
                 </div>
+                <WithdrawalModal
+                    isOpen={isWithdrawalModalOpen}
+                    onClose={() => setWithdrawalModalOpen(false)}
+                    onWithdraw={onWithdraw}
+                    balance={availableBalance}
+                    addToast={addToast}
+                />
             </div>
         );
     }
 
-    const CommunicationTabContent = () => (
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm">
-            <h2 className="text-xl font-bold mb-4">Direct Messaging</h2>
-            <p className="text-slate-500">Chat functionality is under development.</p>
-            {/* A simple representation of messages */}
-            <div className="mt-4 space-y-2 border-t pt-4 dark:border-slate-700">
-                {messages.map(msg => {
-                    const sender = allUsers.find(u => u.id === msg.senderId);
-                    return (
-                        <div key={msg.id} className="text-sm">
-                           <span className="font-bold">{sender?.name || 'Unknown'}: </span>
-                           <span>{msg.text}</span>
-                        </div>
-                    )
-                })}
-            </div>
-        </div>
-    );
+    const CommunicationTabContent = () => {
+        const conversationsMap = new Map<string, { user1: User, user2: User, lastMessage: DirectMessage }>();
+        messages.forEach(msg => {
+            const user1Id = msg.senderId < msg.receiverId ? msg.senderId : msg.receiverId;
+            const user2Id = msg.senderId < msg.receiverId ? msg.receiverId : msg.senderId;
+            const key = `${user1Id}-${user2Id}`;
+            
+            if (!conversationsMap.has(key) || conversationsMap.get(key)!.lastMessage.timestamp < msg.timestamp) {
+                const user1 = allUsers.find(u => u.id === user1Id);
+                const user2 = allUsers.find(u => u.id === user2Id);
+                if (user1 && user2) {
+                    conversationsMap.set(key, { user1, user2, lastMessage: msg });
+                }
+            }
+        });
+        const conversations = Array.from(conversationsMap.values());
     
+        if (selectedConversation) {
+            const { user1, user2 } = selectedConversation;
+            const conversationMessages = messages
+                .filter(m => (m.senderId === user1.id && m.receiverId === user2.id) || (m.senderId === user2.id && m.receiverId === user1.id))
+                .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+
+            return (
+                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm">
+                    <button onClick={() => setSelectedConversation(null)} className="flex items-center gap-2 text-teal-600 font-semibold mb-4"><ArrowLeftIcon className="w-5 h-5"/> Back to conversations</button>
+                    <h3 className="font-bold text-lg mb-4">Conversation between {user1.name} & {user2.name}</h3>
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                        {conversationMessages.map(msg => {
+                            const sender = msg.senderId === user1.id ? user1 : user2;
+                            return (
+                                <div key={msg.id} className="flex items-start gap-2">
+                                    <img src={sender.profilePicture} alt={sender.name} className="w-8 h-8 rounded-full" />
+                                    <div>
+                                        <p className="font-semibold text-sm">{sender.name}</p>
+                                        <p className="bg-slate-100 dark:bg-slate-700 p-2 rounded-lg">{msg.text}</p>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+            )
+        }
+
+        return (
+            <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm">
+                <h2 className="text-xl font-bold mb-4">All Conversations</h2>
+                <div className="space-y-2">
+                    {conversations.map(({ user1, user2, lastMessage }, index) => (
+                        <div key={index} onClick={() => setSelectedConversation({ user1, user2 })} className="p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex -space-x-4">
+                                        <img src={user1.profilePicture} alt={user1.name} className="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800"/>
+                                        <img src={user2.profilePicture} alt={user2.name} className="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800"/>
+                                    </div>
+                                    <p className="font-semibold">{user1.name} & {user2.name}</p>
+                                </div>
+                                <p className="text-xs text-slate-500">{lastMessage.timestamp.toLocaleDateString()}</p>
+                            </div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 truncate pl-12">{lastMessage.text}</p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    };
+
     const ApplicationsTabContent = () => (
         <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm">
             <h2 className="text-xl font-bold mb-4">Teacher Job Applications</h2>
@@ -920,10 +961,14 @@ const OwnerDashboard: React.FC<{
 
 const VideoPlayerModal: React.FC<{ lesson: VideoLesson, subject: Subject, onClose: () => void }> = ({ lesson, subject, onClose }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [progress, setProgress] = useState(0);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [duration, setDuration] = useState(0);
     const [isMuted, setIsMuted] = useState(false);
-    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [playbackRate, setPlaybackRate] = useState(1);
+    const [isControlsVisible, setIsControlsVisible] = useState(true);
 
     const togglePlay = () => {
         if (videoRef.current) {
@@ -941,6 +986,8 @@ const VideoPlayerModal: React.FC<{ lesson: VideoLesson, subject: Subject, onClos
         if (videoRef.current) {
             const percentage = (videoRef.current.currentTime / videoRef.current.duration) * 100;
             setProgress(percentage);
+            setCurrentTime(videoRef.current.currentTime);
+            setDuration(videoRef.current.duration || 0);
         }
     };
 
@@ -951,58 +998,105 @@ const VideoPlayerModal: React.FC<{ lesson: VideoLesson, subject: Subject, onClos
         }
     };
 
+    const handleChapterClick = (time: number) => {
+        if(videoRef.current) videoRef.current.currentTime = time;
+    }
+
     const toggleMute = () => {
         if (videoRef.current) {
             videoRef.current.muted = !videoRef.current.muted;
             setIsMuted(videoRef.current.muted);
         }
     };
+
+    const handlePlaybackRateChange = (rate: number) => {
+        if(videoRef.current) {
+            videoRef.current.playbackRate = rate;
+            setPlaybackRate(rate);
+        }
+    }
     
     const toggleFullscreen = () => {
         if (!document.fullscreenElement) {
-            videoRef.current?.parentElement?.requestFullscreen().catch(err => {
+            containerRef.current?.requestFullscreen().catch(err => {
                 alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
             });
-            setIsFullscreen(true);
         } else {
             document.exitFullscreen();
-            setIsFullscreen(false);
         }
     };
 
     useEffect(() => {
-        const handleFullscreenChange = () => {
-            setIsFullscreen(!!document.fullscreenElement);
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+            switch (e.code) {
+                case 'Space':
+                    e.preventDefault();
+                    togglePlay();
+                    break;
+                case 'ArrowRight':
+                    if (videoRef.current) videoRef.current.currentTime += 5;
+                    break;
+                case 'ArrowLeft':
+                    if (videoRef.current) videoRef.current.currentTime -= 5;
+                    break;
+            }
         };
-        document.addEventListener('fullscreenchange', handleFullscreenChange);
-        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
     }, []);
 
     return (
         <Modal isOpen={true} onClose={onClose} title={lesson.title}>
             <div className="space-y-4">
-                 <div className="aspect-video bg-black rounded-lg overflow-hidden relative group">
-                    <video ref={videoRef} className="w-full h-full" onTimeUpdate={handleProgress} onEnded={() => setIsPlaying(false)}>
+                 <div ref={containerRef} className="aspect-video bg-black rounded-lg overflow-hidden relative group" onMouseEnter={() => setIsControlsVisible(true)} onMouseLeave={() => setIsControlsVisible(false)}>
+                    <video ref={videoRef} className="w-full h-full" onClick={togglePlay} onTimeUpdate={handleProgress} onEnded={() => setIsPlaying(false)}>
                         <source src={`https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4`} type="video/mp4" />
                         Your browser does not support the video tag.
                     </video>
-                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-4">
+                    <div className={`absolute inset-0 bg-black/20 transition-opacity duration-300 flex flex-col justify-between p-2 ${isControlsVisible || !isPlaying ? 'opacity-100' : 'opacity-0'}`}>
                         <div></div> {/* Top spacer */}
-                        <div className="flex items-center justify-center">
-                            <button onClick={togglePlay} className="text-white p-4 bg-black/50 rounded-full">
-                                {isPlaying ? <PauseIcon className="w-8 h-8" /> : <PlayIcon className="w-8 h-8" />}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <button onClick={togglePlay} className="text-white p-4 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 disabled:opacity-0 transition-opacity" disabled={isPlaying}>
+                                <PlayIcon className="w-8 h-8" />
                             </button>
                         </div>
                         <div>
-                             <div className="w-full bg-white/20 h-1.5 rounded-full cursor-pointer" onClick={handleScrub}>
-                                <div className="bg-red-500 h-full rounded-full" style={{ width: `${progress}%` }}></div>
-                            </div>
-                            <div className="flex items-center justify-between mt-2">
-                                <div className="flex items-center gap-2">
-                                    <button onClick={togglePlay} className="text-white">{isPlaying ? <PauseIcon className="w-6 h-6" /> : <PlayIcon className="w-6 h-6" />}</button>
-                                    <button onClick={toggleMute} className="text-white">{isMuted ? <SpeakerXMarkIcon className="w-6 h-6" /> : <SpeakerWaveIcon className="w-6 h-6" />}</button>
+                            <div className="relative h-1.5" onMouseMove={e => e.stopPropagation()}>
+                                 <div className="w-full bg-white/30 h-1.5 rounded-full cursor-pointer absolute" onClick={handleScrub}>
+                                    <div className="bg-red-500 h-full rounded-full" style={{ width: `${progress}%` }}></div>
                                 </div>
-                                <button onClick={toggleFullscreen} className="text-white">{isFullscreen ? <ArrowsPointingInIcon className="w-6 h-6" /> : <ArrowsPointingOutIcon className="w-6 h-6" />}</button>
+                                {lesson.chapters && lesson.chapters.map(chapter => (
+                                    <div 
+                                        key={chapter.time} 
+                                        className="absolute top-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full cursor-pointer group/chapter" 
+                                        style={{ left: `${(chapter.time / duration) * 100}%` }}
+                                        onClick={(e) => {e.stopPropagation(); handleChapterClick(chapter.time);}}
+                                    >
+                                        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-black/70 text-white text-xs rounded opacity-0 group-hover/chapter:opacity-100 whitespace-nowrap">{chapter.title}</span>
+                                    </div>
+                                ))}
+                            </div>
+                           
+                            <div className="flex items-center justify-between mt-2 text-white">
+                                <div className="flex items-center gap-2">
+                                    <button onClick={togglePlay}>{isPlaying ? <PauseIcon className="w-6 h-6" /> : <PlayIcon className="w-6 h-6" />}</button>
+                                    <button onClick={toggleMute}>{isMuted ? <SpeakerXMarkIcon className="w-6 h-6" /> : <SpeakerWaveIcon className="w-6 h-6" />}</button>
+                                    <span className="text-xs">{formatTime(currentTime)} / {formatTime(duration)}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="group/speed relative">
+                                        <button className="text-xs font-bold w-10">{playbackRate}x</button>
+                                        <div className="absolute bottom-full right-1/2 translate-x-1/2 mb-2 bg-black/70 rounded-md p-1 opacity-0 group-hover/speed:opacity-100 transition-opacity flex flex-col gap-1">
+                                            {[0.5, 1, 1.5, 2].map(rate => (
+                                                <button key={rate} onClick={() => handlePlaybackRateChange(rate)} className={`px-2 py-1 rounded text-xs ${playbackRate === rate ? 'bg-teal-500' : 'hover:bg-white/20'}`}>{rate}x</button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <button onClick={toggleFullscreen}>{document.fullscreenElement ? <ArrowsPointingInIcon className="w-6 h-6" /> : <ArrowsPointingOutIcon className="w-6 h-6" />}</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1025,12 +1119,15 @@ const SubjectDetailView: React.FC<{
     subject: Subject;
     lessons: VideoLesson[];
     posts: SubjectPost[];
+    comments: PostComment[];
     completions: LessonCompletion[];
     bookmarks: LessonBookmark[];
     onWatchLesson: (lesson: VideoLesson) => void;
     onToggleBookmark: (lessonId: string) => void;
-}> = ({ user, subject, lessons, posts, completions, bookmarks, onWatchLesson, onToggleBookmark }) => {
+    onAddComment: (postId: string, text: string) => void;
+}> = ({ user, subject, lessons, posts, comments, completions, bookmarks, onWatchLesson, onToggleBookmark, onAddComment }) => {
     const [activeTab, setActiveTab] = useState('Lessons');
+    const [commentingOnPostId, setCommentingOnPostId] = useState<string | null>(null);
 
     const isLessonCompleted = (lessonId: string) => {
         return completions.some(c => c.studentId === user.id && c.lessonId === lessonId);
@@ -1052,24 +1149,66 @@ const SubjectDetailView: React.FC<{
             {name}
         </button>
     );
-    
-    const PostCard: React.FC<{ post: SubjectPost }> = ({ post }) => (
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm">
-            <div className="flex items-start gap-3">
-                <img src={post.teacherProfilePic || 'https://i.pravatar.cc/150'} alt={post.teacherName} className="w-10 h-10 rounded-full object-cover" />
-                <div className="flex-1">
-                    <div className="flex items-center justify-between">
+
+    const CommentSection: React.FC<{ postId: string }> = ({ postId }) => {
+        const [newComment, setNewComment] = useState('');
+        const postComments = comments.filter(c => c.postId === postId).sort((a,b) => a.timestamp.getTime() - b.timestamp.getTime());
+        
+        const handleCommentSubmit = (e: React.FormEvent) => {
+            e.preventDefault();
+            if(newComment.trim()) {
+                onAddComment(postId, newComment.trim());
+                setNewComment('');
+            }
+        };
+
+        return (
+            <div className="mt-4 pt-3 border-t dark:border-slate-700">
+                {postComments.map(comment => (
+                    <div key={comment.id} className="flex items-start gap-2 mb-2">
+                        <img src={comment.authorProfilePic || `https://i.pravatar.cc/150?u=${comment.authorId}`} alt={comment.authorName} className="w-8 h-8 rounded-full object-cover mt-1"/>
                         <div>
-                            <p className="font-bold text-slate-800 dark:text-slate-100">{post.teacherName}</p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">{new Date(post.timestamp).toLocaleString()}</p>
+                            <div className="bg-slate-100 dark:bg-slate-700 rounded-lg px-3 py-2">
+                                <p className="font-bold text-sm text-slate-800 dark:text-slate-100">{comment.authorName}</p>
+                                <p className="text-sm text-slate-600 dark:text-slate-300">{comment.text}</p>
+                            </div>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 ml-2">{new Date(comment.timestamp).toLocaleTimeString()}</p>
                         </div>
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${post.type === PostType.Announcement ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}`}>{post.type}</span>
                     </div>
-                    <p className="mt-2 text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{post.text}</p>
-                </div>
+                ))}
+                 <form onSubmit={handleCommentSubmit} className="flex items-center gap-2 mt-2">
+                    <img src={user.profilePicture} alt={user.name} className="w-8 h-8 rounded-full object-cover"/>
+                    <input type="text" value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="Write a comment..." className="flex-1 px-3 py-2 text-sm rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"/>
+                    <button type="submit" className="p-2 bg-teal-500 text-white rounded-full hover:bg-teal-600"><SendIcon className="w-5 h-5"/></button>
+                 </form>
             </div>
-        </div>
-    );
+        );
+    }
+    
+    const PostCard: React.FC<{ post: SubjectPost }> = ({ post }) => {
+        const postComments = comments.filter(c => c.postId === post.id);
+        return (
+            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm">
+                <div className="flex items-start gap-3">
+                    <img src={post.teacherProfilePic || 'https://i.pravatar.cc/150'} alt={post.teacherName} className="w-10 h-10 rounded-full object-cover" />
+                    <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="font-bold text-slate-800 dark:text-slate-100">{post.teacherName}</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">{new Date(post.timestamp).toLocaleString()}</p>
+                            </div>
+                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${post.type === PostType.Announcement ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}`}>{post.type}</span>
+                        </div>
+                        <p className="mt-2 text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{post.text}</p>
+                         <button onClick={() => setCommentingOnPostId(commentingOnPostId === post.id ? null : post.id)} className="text-sm text-slate-500 dark:text-slate-400 mt-2 hover:underline">
+                            {postComments.length} {postComments.length === 1 ? 'Comment' : 'Comments'}
+                         </button>
+                    </div>
+                </div>
+                {commentingOnPostId === post.id && <CommentSection postId={post.id} />}
+            </div>
+        );
+    }
 
     return (
         <div className="animate-fade-in-up">
@@ -1283,6 +1422,7 @@ export const App: React.FC = () => {
     const [directMessages, setDirectMessages] = useState<DirectMessage[]>(INITIAL_DIRECT_MESSAGES);
     const [jobApplications, setJobApplications] = useState<JobApplication[]>(INITIAL_JOB_APPLICATIONS);
     const [subjectPosts, setSubjectPosts] = useState<SubjectPost[]>(SUBJECT_POSTS);
+    const [postComments, setPostComments] = useState<PostComment[]>(POST_COMMENTS);
     const [examinationAttempts, setExaminationAttempts] = useState<ExaminationAttempt[]>(EXAMINATION_ATTEMPTS);
 
 
@@ -1314,6 +1454,9 @@ export const App: React.FC = () => {
     } | null>(null);
     const [lastExamResult, setLastExamResult] = useState<ExaminationAttempt | null>(null);
     const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+    const [selectedUserForDetail, setSelectedUserForDetail] = useState<User | null>(null);
+    const [activeLiveStream, setActiveLiveStream] = useState<LiveClass | null>(null);
+    const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
     
     // Derived state
     const { status: subscriptionStatus, plan: subscriptionPlan } = getSubscriptionStatus(currentUser);
@@ -1415,12 +1558,24 @@ export const App: React.FC = () => {
             addToast('Sign-up is currently only available for students.', 'info');
         }
     };
+    
+    const handleGoogleAuth = () => {
+        // Simulate logging in as an existing student user
+        const simulatedUser = users.find(u => u.id === 'user-1');
+        if (simulatedUser) {
+            setCurrentUser(simulatedUser);
+            addToast(`Welcome back, ${simulatedUser.name}!`, 'success');
+        } else {
+            addToast('Could not sign in with Google.', 'error');
+        }
+    };
 
     const handleLogout = () => {
         setCurrentUser(null);
         setCurrentView('dashboard');
         setSelectedSubject(null);
         setSettingsModalOpen(false);
+        setActiveLiveStream(null);
         addToast("You've been logged out.", 'info');
     };
 
@@ -1462,16 +1617,25 @@ export const App: React.FC = () => {
     };
 
     const handleBack = () => {
+        if (activeLiveStream) {
+            setActiveLiveStream(null);
+            return;
+        }
         if (activeExamState) return; // Cannot go back during an exam
+        if(activeConversationId) {
+            setActiveConversationId(null);
+            return;
+        }
         
         if (lastExamResult) {
             setLastExamResult(null);
             setCurrentView('examinations');
         } else if (selectedBookToRead) {
             setSelectedBookToRead(null);
-        } else if (selectedSubject || currentView !== 'dashboard') {
+            setCurrentView('bookstore');
+        } else if (selectedSubject) {
             setSelectedSubject(null);
-            setCurrentView('dashboard');
+            setCurrentView('subjects');
         } else {
             setCurrentView('dashboard');
         }
@@ -1484,17 +1648,19 @@ export const App: React.FC = () => {
             return;
         }
         setSelectedSubject(subject);
-        setCurrentView('subject');
     }
 
     const handleJoinLiveClass = (liveClass: LiveClass) => {
         if (!currentUser) return;
 
-        if (subscriptionPlan === SubscriptionPlan.Monthly) {
+        const startLiveSession = () => {
+            setActiveLiveStream(liveClass);
             addToast(`Joining live class: ${liveClass.title}`, 'success');
-            // Navigate to live class view (not implemented)
+        }
+
+        if (subscriptionPlan === SubscriptionPlan.Monthly) {
+            startLiveSession();
         } else if (subscriptionStatus === 'Active') {
-            // Daily or Weekly plan, needs top-up
             setPendingLiveClass(liveClass);
         } else {
             addToast("You need an active subscription to join live classes.", "error");
@@ -1521,6 +1687,7 @@ export const App: React.FC = () => {
         };
     
         setLiveClasses(prev => [newLiveClass, ...prev]);
+        setActiveLiveStream(newLiveClass);
     
         const newLog: ActivityLog = {
             id: `log-${Date.now()}`,
@@ -1617,7 +1784,8 @@ export const App: React.FC = () => {
 
                 const newLog: ActivityLog = { id: `log-${Date.now()}`, userId: APP_OWNER_ID, type: ActivityType.PaymentReceived, text: `${currentUser.name} paid K500 to join live class "${pendingLiveClass.title}".`, timestamp: new Date(), read: false };
                 setActivityLogs(prev => [newLog, ...prev]);
-
+                
+                setActiveLiveStream(pendingLiveClass);
                 addToast(`Payment successful! Joining ${pendingLiveClass.title}...`, 'success');
                 setPendingLiveClass(null);
                 setConfirmationState(null);
@@ -1738,25 +1906,72 @@ export const App: React.FC = () => {
         addToast("Post created successfully!", 'success');
     };
 
+    const handleAddComment = (postId: string, text: string) => {
+        if (!currentUser) return;
+        const newComment: PostComment = {
+            id: `comment-${Date.now()}`,
+            postId,
+            authorId: currentUser.id,
+            authorName: currentUser.name,
+            authorProfilePic: currentUser.profilePicture,
+            text,
+            timestamp: new Date(),
+        };
+        setPostComments(prev => [...prev, newComment]);
+
+        const post = subjectPosts.find(p => p.id === postId);
+        const postAuthor = users.find(u => u.id === post?.teacherId);
+        if (postAuthor && postAuthor.id !== currentUser.id) {
+            const log: ActivityLog = {
+                id: `log-${Date.now()}`,
+                userId: postAuthor.id,
+                type: ActivityType.NewCommentOnPostTeacher,
+                text: `${currentUser.name} commented on your post.`,
+                timestamp: new Date(),
+                read: false,
+            };
+            setActivityLogs(prev => [...prev, log]);
+        }
+    }
+
+    const handleSendMessage = (receiverId: string, text: string) => {
+        if(!currentUser) return;
+        const newMessage: DirectMessage = {
+            id: `dm-${Date.now()}`,
+            senderId: currentUser.id,
+            receiverId,
+            text,
+            timestamp: new Date(),
+        };
+        setDirectMessages(prev => [...prev, newMessage]);
+
+        const receiver = users.find(u => u.id === receiverId);
+        if(receiver) {
+            const log: ActivityLog = {
+                id: `log-dm-${Date.now()}`,
+                userId: receiverId,
+                type: ActivityType.NewDirectMessage,
+                text: `You have a new message from ${currentUser.name}.`,
+                timestamp: new Date(),
+                read: false
+            };
+            setActivityLogs(prev => [...prev, log]);
+        }
+    };
+
     const handleMarkNotificationsRead = () => {
         setActivityLogs(prev => prev.map(log => ({ ...log, read: true })));
         addToast("Notifications marked as read.", "info");
     };
 
-    const handleInitiateDeposit = (amount: number, method: 'Airtel Money' | 'TNM Mpamba') => {
-        const phoneNumbers = {
-            'Airtel Money': '0997822385',
-            'TNM Mpamba': '0888072607'
-        }
+    const handleWithdrawal = (withdrawal: Omit<Withdrawal, 'id' | 'timestamp'>) => {
         const newWithdrawal: Withdrawal = {
+            ...withdrawal,
             id: `wd-${Date.now()}`,
-            amount,
-            method,
-            phoneNumber: phoneNumbers[method],
             timestamp: new Date()
         };
         setWithdrawals(prev => [newWithdrawal, ...prev]);
-        addToast(`Deposit of K${amount.toLocaleString()} to ${method} initiated.`, 'success');
+        addToast(`Withdrawal of K${withdrawal.amount.toLocaleString()} to ${withdrawal.method} initiated.`, 'success');
     }
 
     // Examination Handlers
@@ -1929,6 +2144,8 @@ export const App: React.FC = () => {
                 case ActivityType.NewLesson: return <VideoCameraIcon className={`${iconClass} text-purple-500`} />;
                 case ActivityType.LiveReminder: return <RssIcon className={`${iconClass} text-red-500`} />;
                 case ActivityType.PaymentReceived: return <WalletIcon className={`${iconClass} text-indigo-500`} />;
+                case ActivityType.NewDirectMessage: return <EnvelopeIcon className={`${iconClass} text-blue-500`} />;
+                case ActivityType.NewPostComment: return <ChatBubbleLeftRightIcon className={`${iconClass} text-yellow-500`} />;
                 default: return <InformationCircleIcon className={`${iconClass} text-slate-500`} />;
             }
         };
@@ -2012,7 +2229,7 @@ export const App: React.FC = () => {
         const timerRef = useRef<number>();
 
         useEffect(() => {
-            timerRef.current = setInterval(() => {
+            timerRef.current = window.setInterval(() => {
                 setActiveExamState(prev => {
                     if (prev && prev.timeLeft > 0) {
                         return { ...prev, timeLeft: prev.timeLeft - 1 };
@@ -2124,165 +2341,448 @@ export const App: React.FC = () => {
                         </div>
                      </div>
 
-                     <Button onClick={handleBack} className="mt-8">Back to Examinations</Button>
+                     <Button onClick={() => setCurrentView('examinations')} className="mt-8">Back to Examinations</Button>
                  </div>
              </div>
         )
     };
+
+    const LiveStreamView: React.FC = () => {
+        const videoRef = useRef<HTMLVideoElement>(null);
+        const streamRef = useRef<MediaStream | null>(null);
+        const [isScreenSharing, setIsScreenSharing] = useState(false);
+        const [error, setError] = useState('');
+        const [quality, setQuality] = useState('720p');
     
+        const startStream = async (constraints: MediaStreamConstraints) => {
+            try {
+                // Stop any existing stream
+                if (streamRef.current) {
+                    streamRef.current.getTracks().forEach(track => track.stop());
+                }
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                }
+                streamRef.current = stream;
+                setError('');
+            } catch (err) {
+                console.error("Error accessing media devices.", err);
+                setError('Could not access camera/microphone. Please check permissions.');
+            }
+        };
+
+        const handleQualityChange = (newQuality: string) => {
+            setQuality(newQuality);
+            const constraints = {
+                '8k': { width: { ideal: 7680 }, height: { ideal: 4320 } },
+                '4k': { width: { ideal: 3840 }, height: { ideal: 2160 } },
+                '1440p': { width: { ideal: 2560 }, height: { ideal: 1440 } },
+                '1080p': { width: { ideal: 1920 }, height: { ideal: 1080 } },
+                '720p': { width: { ideal: 1280 }, height: { ideal: 720 } },
+                '480p': { width: { ideal: 854 }, height: { ideal: 480 } },
+                '360p': { width: { ideal: 640 }, height: { ideal: 360 } },
+            };
+            startStream({
+                video: { ...(constraints[newQuality as keyof typeof constraints]), facingMode: 'user' },
+                audio: true,
+            });
+        }
+    
+        useEffect(() => {
+            handleQualityChange('720p'); // Start with default quality
+            return () => {
+                if (streamRef.current) {
+                    streamRef.current.getTracks().forEach(track => track.stop());
+                }
+            };
+        }, []);
+    
+        const toggleScreenShare = async () => {
+            if (isScreenSharing) {
+                handleQualityChange(quality); // Go back to camera
+                setIsScreenSharing(false);
+            } else {
+                try {
+                    const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+                    if (videoRef.current) {
+                        videoRef.current.srcObject = screenStream;
+                    }
+                    // When the user stops sharing via browser UI
+                    screenStream.getVideoTracks()[0].onended = () => {
+                        handleQualityChange(quality);
+                        setIsScreenSharing(false);
+                    };
+                    setIsScreenSharing(true);
+                } catch (err) {
+                    console.error("Screen share error", err);
+                    addToast("Could not start screen sharing.", "error");
+                }
+            }
+        };
+    
+        if (!activeLiveStream) return null;
+        const isTeacher = currentUser?.role === Role.Teacher;
+    
+        return (
+            <div className="p-4 animate-fade-in-up">
+                <div className="bg-slate-900 text-white rounded-xl shadow-2xl overflow-hidden">
+                    <div className="aspect-video bg-black flex items-center justify-center">
+                        {error ? <p className="text-red-400">{error}</p> : <video ref={videoRef} className="w-full h-full" autoPlay playsInline muted={isTeacher}></video>}
+                    </div>
+                    <div className="p-4 bg-slate-800/50">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <h2 className="text-xl font-bold">{activeLiveStream.title}</h2>
+                                <p className="text-sm text-slate-300">{activeLiveStream.teacherName}</p>
+                            </div>
+                            <div className="flex items-center gap-2 px-3 py-1 bg-red-600 rounded-full text-sm font-bold">
+                                <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span></span>
+                                LIVE
+                            </div>
+                        </div>
+                         {isTeacher && (
+                            <div className="mt-4 pt-4 border-t border-slate-700 flex items-center justify-center gap-4">
+                                <Button onClick={toggleScreenShare} variant='secondary' className="!bg-blue-600 hover:!bg-blue-700 !text-white">{isScreenSharing ? 'Stop Sharing' : 'Share Screen'}</Button>
+                                <select value={quality} onChange={e => handleQualityChange(e.target.value)} className="bg-slate-700 text-white rounded-full px-4 py-3 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                                    <option value="360p">360p (SD)</option>
+                                    <option value="480p">480p</option>
+                                    <option value="720p">720p (HD)</option>
+                                    <option value="1080p">1080p (FHD)</option>
+                                    <option value="1440p">1440p (2K)</option>
+                                    <option value="2160p">2160p (4K)</option>
+                                    <option value="4320p">4320p (8K)</option>
+                                </select>
+                                <Button onClick={handleBack} className="!bg-red-600 hover:!bg-red-700">End Stream</Button>
+                            </div>
+                         )}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const UserDetailModal: React.FC = () => {
+        if (!selectedUserForDetail) return null;
+
+        const userPayments = payments.filter(p => p.studentId === selectedUserForDetail.id);
+        const userExamAttempts = examinationAttempts.filter(a => a.studentId === selectedUserForDetail.id);
+        const teacherSubjects = subjects.filter(s => s.teacherId === selectedUserForDetail.id);
+
+        return(
+            <Modal isOpen={true} onClose={() => setSelectedUserForDetail(null)} title={`User Details: ${selectedUserForDetail.name}`}>
+                <div className="space-y-4 text-sm">
+                    <div className="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg">
+                        <p><strong>Name:</strong> {selectedUserForDetail.name}</p>
+                        <p><strong>Email:</strong> {selectedUserForDetail.email}</p>
+                        <p><strong>Role:</strong> {selectedUserForDetail.role}</p>
+                    </div>
+
+                    {selectedUserForDetail.role === Role.Student && (
+                        <>
+                            <h3 className="font-bold text-lg border-t pt-4 dark:border-slate-600">Student Activity</h3>
+                            <div className="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg">
+                                <p><strong>Subscription:</strong> {getSubscriptionStatus(selectedUserForDetail).plan} ({getSubscriptionStatus(selectedUserForDetail).status})</p>
+                            </div>
+                            <div>
+                                <h4 className="font-semibold mb-2">Payment History ({userPayments.length})</h4>
+                                <div className="max-h-32 overflow-y-auto space-y-1 text-xs">
+                                    {userPayments.map(p => <p key={p.id}>K{p.amount.toLocaleString()} for {p.plan} on {p.date.toLocaleDateString()}</p>)}
+                                </div>
+                            </div>
+                            <div>
+                                <h4 className="font-semibold mb-2">Exam Attempts ({userExamAttempts.length})</h4>
+                                <div className="max-h-32 overflow-y-auto space-y-1 text-xs">
+                                    {userExamAttempts.map(a => <p key={a.id}>{a.examinationTitle}: {a.score}/{a.totalQuestions}</p>)}
+                                </div>
+                            </div>
+                        </>
+                    )}
+                    {selectedUserForDetail.role === Role.Teacher && (
+                         <>
+                            <h3 className="font-bold text-lg border-t pt-4 dark:border-slate-600">Teacher Details</h3>
+                            <div>
+                                <h4 className="font-semibold mb-2">Assigned Subjects ({teacherSubjects.length})</h4>
+                                <p>{teacherSubjects.map(s => s.name).join(', ')}</p>
+                            </div>
+                         </>
+                    )}
+                </div>
+            </Modal>
+        )
+    }
+
+    const MessagesView: React.FC = () => {
+        if(!currentUser) return null;
+        const messagesEndRef = useRef<HTMLDivElement>(null);
+        const [newMessage, setNewMessage] = useState('');
+
+        useEffect(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, [directMessages, activeConversationId]);
+        
+
+        const myConversations = [...new Set(directMessages
+            .filter(m => m.senderId === currentUser.id || m.receiverId === currentUser.id)
+            .map(m => m.senderId === currentUser.id ? m.receiverId : m.senderId)
+        )];
+
+        if(activeConversationId) {
+            const otherUser = users.find(u => u.id === activeConversationId);
+            if(!otherUser) return null;
+
+            const conversationMessages = directMessages
+                .filter(m => (m.senderId === currentUser.id && m.receiverId === otherUser.id) || (m.senderId === otherUser.id && m.receiverId === currentUser.id))
+                .sort((a,b) => a.timestamp.getTime() - b.timestamp.getTime());
+            
+            const handleMessageSubmit = (e: React.FormEvent) => {
+                e.preventDefault();
+                if(newMessage.trim()) {
+                    handleSendMessage(otherUser.id, newMessage.trim());
+                    setNewMessage('');
+                }
+            };
+            
+            return (
+                <div className="flex flex-col h-full">
+                    <div className="flex-grow overflow-y-auto p-4 space-y-4">
+                        {conversationMessages.map(msg => (
+                            <div key={msg.id} className={`flex items-end gap-2 ${msg.senderId === currentUser.id ? 'justify-end' : 'justify-start'}`}>
+                                {msg.senderId !== currentUser.id && <img src={otherUser.profilePicture} alt={otherUser.name} className="w-8 h-8 rounded-full"/>}
+                                <div className={`max-w-xs md:max-w-md px-4 py-2 rounded-2xl ${msg.senderId === currentUser.id ? 'bg-teal-500 text-white rounded-br-none' : 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-bl-none'}`}>
+                                    <p>{msg.text}</p>
+                                </div>
+                            </div>
+                        ))}
+                        <div ref={messagesEndRef} />
+                    </div>
+                     <form onSubmit={handleMessageSubmit} className="p-4 border-t dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center gap-2">
+                        <input type="text" value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder="Type a message..." className="flex-1 px-4 py-2 rounded-full border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500"/>
+                        <button type="submit" className="p-3 bg-teal-500 text-white rounded-full hover:bg-teal-600"><SendIcon className="w-5 h-5"/></button>
+                    </form>
+                </div>
+            )
+        }
+
+        return (
+            <div className="p-4 space-y-3">
+                 {myConversations.map(userId => {
+                    const user = users.find(u => u.id === userId);
+                    const lastMessage = directMessages.filter(m => m.senderId === userId || m.receiverId === userId).sort((a,b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
+                    if(!user) return null;
+                    return (
+                        <div key={user.id} onClick={() => setActiveConversationId(user.id)} className="bg-white dark:bg-slate-800 p-3 rounded-lg flex items-center gap-4 shadow-sm cursor-pointer hover-lift">
+                            <img src={user.profilePicture} alt={user.name} className="w-12 h-12 rounded-full"/>
+                            <div className="flex-grow">
+                                <h3 className="font-semibold text-slate-800 dark:text-slate-100">{user.name}</h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{lastMessage.senderId === currentUser.id && 'You: '}{lastMessage.text}</p>
+                            </div>
+                        </div>
+                    )
+                 })}
+            </div>
+        )
+    };
+    
+    const SubjectsView: React.FC<{
+        user: User;
+        allSubjects: Subject[];
+        allLessons: VideoLesson[];
+        lessonCompletions: LessonCompletion[];
+        activeLiveClass: LiveClass | null;
+        onSelectSubject: (subject: Subject) => void;
+    }> = ({ user, allSubjects, allLessons, lessonCompletions, activeLiveClass, onSelectSubject }) => {
+        const [searchTerm, setSearchTerm] = useState('');
+        const hasActiveSubscription = getSubscriptionStatus(user).status === 'Active';
+
+        let displayedSubjects = allSubjects;
+        if (user.role === Role.Teacher) {
+            displayedSubjects = allSubjects.filter(s => s.teacherId === user.id);
+        }
+
+        const filteredSubjects = displayedSubjects.filter(s => 
+            s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            s.teacherName.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+        return (
+            <div className="p-4 space-y-6 animate-fade-in-up">
+                <div className="relative">
+                    <input 
+                        type="text"
+                        placeholder="Search subjects or teachers..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    />
+                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                </div>
+                 <div className="grid grid-cols-2 gap-4">
+                    {filteredSubjects.map(subject => {
+                         const lessonsForSubject = allLessons.filter(l => l.subjectId === subject.id);
+                         const completedLessonsCount = lessonCompletions.filter(
+                             c => c.studentId === user.id && lessonsForSubject.some(l => l.id === c.lessonId)
+                         ).length;
+                         const progress = lessonsForSubject.length > 0 && user.role === Role.Student
+                             ? Math.round((completedLessonsCount / lessonsForSubject.length) * 100) 
+                             : 0;
+                        const isLiveNow = activeLiveClass?.subjectId === subject.id;
+
+                        return (
+                            <SubjectCard 
+                                key={subject.id} 
+                                subject={subject} 
+                                onClick={() => onSelectSubject(subject)} 
+                                progress={progress}
+                                isLocked={user.role === Role.Student && !hasActiveSubscription}
+                                isLive={isLiveNow}
+                            />
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    }
+
+    // ----- Render Logic -----
     if (!currentUser) {
         return (
             <>
                 <ToastContainer toasts={toasts} onDismiss={dismissToast} />
-                <ConfirmationModal />
+                <AuthScreen
+                    onLogin={handleLogin}
+                    onSignUp={handleSignUp}
+                    onGoogleAuth={handleGoogleAuth}
+                    onApply={() => setApplicationModalOpen(true)}
+                />
                 <JobApplicationModal 
-                    isOpen={isApplicationModalOpen}
+                    isOpen={isApplicationModalOpen} 
                     onClose={() => setApplicationModalOpen(false)}
                     onSubmit={handleJobApplicationSubmit}
-                />
-                 <PaymentModal
-                    isOpen={isPaymentModalOpen}
-                    onClose={() => {
-                        setPaymentModalOpen(false);
-                        setPendingSignUp(null); // Clear pending sign-up if user cancels
-                    }}
-                    onSelectPlan={handleSelectPlan}
-                    isSignUpFlow={!!pendingSignUp}
-                />
-                <AuthScreen 
-                    onLogin={handleLogin} 
-                    onSignUp={handleSignUp}
-                    onGoogleAuth={() => addToast('Google Auth is not implemented yet.', 'info')}
-                    onApply={() => setApplicationModalOpen(true)}
                 />
             </>
         );
     }
-    
-    const renderContent = () => {
-        switch (currentUser.role) {
-            case Role.Student:
-                const now = new Date();
-                const anHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-                const recentLiveClass = liveClasses
-                    .filter(lc => lc.startTime > anHourAgo)
-                    .sort((a,b) => b.startTime.getTime() - a.startTime.getTime())[0] || null;
 
-                if (currentView === 'bookstore') {
-                    return <BookStoreView
-                        books={BOOKS}
-                        purchases={bookPurchases}
-                        studentId={currentUser.id}
-                        onBuyBook={handleBuyBook}
-                        onReadBook={handleOpenBookReader}
-                    />;
-                }
-                 if (currentView === 'examinations') return <ExaminationsView />;
-                 if (currentView === 'takeExam') return <TakeExaminationView />;
-                 if (currentView === 'examResults') return <ExaminationResultsView />;
-                if (currentView === 'subject' && selectedSubject) {
-                    const subjectLessons = lessons.filter(l => l.subjectId === selectedSubject.id);
-                    const subjectPostsForView = subjectPosts.filter(p => p.subjectId === selectedSubject.id);
-                    return <SubjectDetailView 
-                                user={currentUser} 
-                                subject={selectedSubject} 
-                                lessons={subjectLessons} 
-                                posts={subjectPostsForView}
-                                completions={completions}
-                                bookmarks={bookmarks}
-                                onWatchLesson={setSelectedLesson}
-                                onToggleBookmark={handleToggleBookmark}
-                            />
-                }
-                return <StudentDashboard 
-                            user={currentUser} 
-                            subscriptionStatus={subscriptionStatus}
-                            subscriptionPlan={subscriptionPlan}
-                            allSubjects={subjects}
-                            allLessons={lessons}
-                            allLiveClasses={liveClasses}
-                            lessonCompletions={completions}
-                            bookmarks={bookmarks}
-                            activeLiveClass={recentLiveClass}
-                            onSelectSubject={handleSelectSubject}
-                            onJoinLiveClass={handleJoinLiveClass}
-                            onPayForLessons={() => setPaymentModalOpen(true)}
-                            onWatchLesson={setSelectedLesson}
-                            onNavigate={setCurrentView}
-                        />;
-            case Role.Teacher:
-                const teacherSubjects = subjects.filter(s => s.teacherId === currentUser.id);
-                return <TeacherDashboard 
-                    user={currentUser} 
-                    subjects={teacherSubjects}
-                    lessons={lessons}
-                    onStartLiveClass={handleStartLiveClass}
-                    onUploadLesson={handleUploadLesson}
-                    onCreatePost={handleCreatePost}
-                />;
-            case Role.Owner:
-                return <OwnerDashboard 
-                            user={currentUser} 
-                            allUsers={users} 
-                            payments={payments}
-                            withdrawals={withdrawals}
-                            messages={directMessages}
-                            applications={jobApplications}
-                            activityLogs={activityLogs}
-                            onUpdateApplicationStatus={handleUpdateApplicationStatus}
-                            onInitiateDeposit={handleInitiateDeposit}
-                        />;
-            default:
-                return <div>Error: Unknown user role.</div>
+    const renderMainContent = () => {
+        if(activeLiveStream) return <LiveStreamView />;
+        if (selectedLesson) {
+            const subject = subjects.find(s => s.id === selectedLesson.subjectId);
+            return subject ? <VideoPlayerModal lesson={selectedLesson} subject={subject} onClose={() => setSelectedLesson(null)} /> : null;
         }
-    }
+        if (selectedSubject) return <SubjectDetailView user={currentUser} subject={selectedSubject} lessons={lessons.filter(l => l.subjectId === selectedSubject.id)} posts={subjectPosts.filter(p=>p.subjectId === selectedSubject.id)} comments={postComments} completions={completions} bookmarks={bookmarks} onWatchLesson={setSelectedLesson} onToggleBookmark={handleToggleBookmark} onAddComment={handleAddComment} />;
+
+        switch (currentView) {
+            case 'subjects':
+                return <SubjectsView user={currentUser} allSubjects={subjects} allLessons={lessons} lessonCompletions={completions} activeLiveClass={liveClasses.find(lc => lc.startTime <= new Date() && new Date(lc.startTime.getTime() + 2*60*60*1000) > new Date()) || null} onSelectSubject={handleSelectSubject}/>
+            case 'messages':
+                return <MessagesView />;
+            case 'bookstore':
+                return <BookStoreView books={BOOKS} purchases={bookPurchases} studentId={currentUser.id} onBuyBook={handleBuyBook} onReadBook={handleOpenBookReader} />
+            case 'examinations':
+                return <ExaminationsView />;
+            case 'takeExam':
+                 return <TakeExaminationView />;
+            case 'examResults':
+                return <ExaminationResultsView />;
+            case 'dashboard':
+            default:
+                if (currentUser.role === Role.Student) {
+                    return <StudentDashboard user={currentUser} subscriptionStatus={subscriptionStatus} subscriptionPlan={subscriptionPlan} allSubjects={subjects} allLessons={lessons} allLiveClasses={liveClasses} lessonCompletions={completions} bookmarks={bookmarks} activeLiveClass={liveClasses.find(lc => lc.startTime <= new Date() && new Date(lc.startTime.getTime() + 2*60*60*1000) > new Date()) || null} onSelectSubject={handleSelectSubject} onJoinLiveClass={handleJoinLiveClass} onPayForLessons={() => setPaymentModalOpen(true)} onWatchLesson={setSelectedLesson} onNavigate={setCurrentView} />;
+                }
+                if (currentUser.role === Role.Teacher) {
+                    const teacherSubjects = subjects.filter(s => s.teacherId === currentUser.id);
+                    const teacherActivity = activityLogs.filter(log => log.userId === currentUser.id);
+                    return <TeacherDashboard user={currentUser} subjects={teacherSubjects} lessons={lessons} activityLogs={teacherActivity} onStartLiveClass={handleStartLiveClass} onUploadLesson={handleUploadLesson} onCreatePost={handleCreatePost} />;
+                }
+                if (currentUser.role === Role.Owner) {
+                    return <OwnerDashboard user={currentUser} allUsers={users} payments={payments} withdrawals={withdrawals} messages={directMessages} applications={jobApplications} activityLogs={activityLogs} onUpdateApplicationStatus={handleUpdateApplicationStatus} onWithdraw={handleWithdrawal} onViewUser={setSelectedUserForDetail} addToast={addToast} />;
+                }
+                return null;
+        }
+    };
+
+    const getHeaderTitle = () => {
+        if(activeLiveStream) return "Live Class";
+        if(selectedSubject) return selectedSubject.name;
+        switch (currentView) {
+            case 'subjects': return 'Subjects';
+            case 'messages': return activeConversationId ? users.find(u => u.id === activeConversationId)?.name || 'Messages' : 'Messages';
+            case 'bookstore': return 'Bookstore';
+            case 'examinations': return 'Examinations';
+            default: return 'Dashboard';
+        }
+    };
 
     return (
-        <div className="min-h-screen bg-slate-100 dark:bg-slate-900 font-sans">
-            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
-            <ConfirmationModal />
-            <BookReaderModal />
-            <SettingsModal />
-
-            <PaymentModal
-                isOpen={isPaymentModalOpen}
-                onClose={() => setPaymentModalOpen(false)}
-                onSelectPlan={handleSelectPlan}
-                isSignUpFlow={!!pendingSignUp}
-            />
-
-            {pendingLiveClass && (
-                <LiveStreamTopUpModal 
-                    isOpen={true} 
-                    onClose={() => setPendingLiveClass(null)} 
-                    onConfirm={handleLiveStreamTopUp}
-                    liveClass={pendingLiveClass}
-                />
-            )}
-
-            {selectedLesson && (
-                <VideoPlayerModal 
-                    lesson={selectedLesson} 
-                    subject={subjects.find(s => s.id === selectedLesson.subjectId)!}
-                    onClose={() => setSelectedLesson(null)} 
-                />
-            )}
-            
+        <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex flex-col">
             <Header
                 user={currentUser}
                 onLogout={handleLogout}
-                currentView={currentView}
-                onBack={handleBack}
+                title={getHeaderTitle()}
+                onBack={(selectedSubject || activeLiveStream || selectedLesson || currentView !== 'dashboard' || activeConversationId) ? handleBack : undefined}
                 onNavigateToSettings={() => setSettingsModalOpen(true)}
                 unreadCount={unreadNotifications}
-                onToggleNotifications={() => setNotificationsPanelOpen(p => !p)}
+                onToggleNotifications={() => setNotificationsPanelOpen(prev => !prev)}
             />
-            <div className="relative">
-                <NotificationsPanel />
-                <main className="max-w-4xl mx-auto pb-16">
-                    {renderContent()}
-                </main>
-            </div>
+            <main className="flex-grow">
+                {renderMainContent()}
+            </main>
+            
+            {(currentUser.role === Role.Student || currentUser.role === Role.Teacher) && (
+                 <BottomNavigationBar currentView={currentView} setCurrentView={setCurrentView} role={currentUser.role} />
+            )}
+            
+            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+            <PaymentModal 
+                isOpen={isPaymentModalOpen} 
+                onClose={() => { setPaymentModalOpen(false); if (pendingSignUp) setPendingSignUp(null); }} 
+                onSelectPlan={handleSelectPlan}
+                isSignUpFlow={!!pendingSignUp}
+            />
+             {pendingLiveClass && <LiveStreamTopUpModal isOpen={true} onClose={() => setPendingLiveClass(null)} onConfirm={handleLiveStreamTopUp} liveClass={pendingLiveClass} />}
+             <ConfirmationModal />
+             <SettingsModal />
+             <NotificationsPanel />
+             <BookReaderModal />
+             <UserDetailModal />
         </div>
     );
 };
+
+const BottomNavigationBar: React.FC<{currentView: string, setCurrentView: (view: string) => void, role: Role}> = ({currentView, setCurrentView, role}) => {
+    const navItems = role === Role.Student ? [
+        { name: 'dashboard', label: 'Home', icon: HomeIcon },
+        { name: 'subjects', label: 'Subjects', icon: BookOpenIcon },
+        { name: 'messages', label: 'Messages', icon: ChatBubbleOvalLeftEllipsisIcon },
+        { name: 'more', label: 'More', icon: PlusIcon } // Placeholder for future items like bookstore, exams
+    ] : [
+        { name: 'dashboard', label: 'Dashboard', icon: HomeIcon },
+        { name: 'subjects', label: 'My Subjects', icon: BookOpenIcon },
+        { name: 'messages', label: 'Messages', icon: ChatBubbleOvalLeftEllipsisIcon },
+    ];
+    
+    // For student, 'more' could open a small menu
+    const handleNavigation = (view: string) => {
+        if(view === 'more' && role === Role.Student) {
+            // In a real app, this would open a sheet or modal with options
+            // For now, let's just cycle through other main views
+            setCurrentView('bookstore');
+        } else {
+             setCurrentView(view);
+        }
+    }
+    
+    return (
+        <div className="sticky bottom-0 left-0 right-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-700 z-20">
+            <div className="flex justify-around items-center h-16">
+                {navItems.map(item => (
+                    <button key={item.name} onClick={() => handleNavigation(item.name)} className={`flex flex-col items-center justify-center w-full transition-colors duration-200 ${currentView === item.name ? 'text-teal-600 dark:text-teal-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}>
+                        <item.icon className="w-6 h-6 mb-1"/>
+                        <span className="text-xs font-medium">{item.label}</span>
+                    </button>
+                ))}
+            </div>
+        </div>
+    )
+}

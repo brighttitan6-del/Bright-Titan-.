@@ -71,6 +71,7 @@ export interface VideoLesson {
   duration: string; // e.g., "15:30"
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
   tags?: string[];
+  chapters?: { time: number; title: string; }[]; // time in seconds
 }
 
 export interface LiveClass {
@@ -146,6 +147,10 @@ export enum ActivityType {
   NewBookReading = 'Book Opened',
   NewExamination = 'New Examination',
   ExaminationSubmission = 'Examination Submission',
+  NewDirectMessage = 'New Direct Message',
+  NewPostComment = 'New Comment on Post',
+  NewEnrollmentInClass = 'New Enrollment in Class',
+  NewCommentOnPostTeacher = 'New Comment on Your Post',
 }
 
 export interface ActivityLog {
@@ -198,6 +203,16 @@ export interface SubjectPost {
     timestamp: Date;
 }
 
+export interface PostComment {
+    id: string;
+    postId: string;
+    authorId: string;
+    authorName: string;
+    authorProfilePic?: string;
+    text: string;
+    timestamp: Date;
+}
+
 export interface ToastMessage {
     id: number;
     message: string;
@@ -207,9 +222,12 @@ export interface ToastMessage {
 export interface Withdrawal {
   id: string;
   amount: number;
-  method: 'Airtel Money' | 'TNM Mpamba';
-  phoneNumber: string;
+  method: 'Airtel Money' | 'TNM Mpamba' | 'Bank';
   timestamp: Date;
+  // Conditionally required fields
+  phoneNumber?: string;
+  bankName?: string;
+  accountNumber?: string;
 }
 
 export interface DirectMessage {

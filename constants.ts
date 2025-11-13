@@ -1,4 +1,4 @@
-import { Role, User, Subject, VideoLesson, LiveClass, PaymentRecord, Quiz, QuizAttempt, Enrollment, LessonCompletion, ActivityLog, ActivityType, Book, SubjectPost, PostType, JobApplication, ApplicationStatus, DirectMessage, ExaminationQuestion, Examination, ExaminationAttempt, SubscriptionPlan, BookPurchase, Withdrawal, LessonBookmark, BookReading } from './types';
+import { Role, User, Subject, VideoLesson, LiveClass, PaymentRecord, Quiz, QuizAttempt, Enrollment, LessonCompletion, ActivityLog, ActivityType, Book, SubjectPost, PostType, JobApplication, ApplicationStatus, DirectMessage, ExaminationQuestion, Examination, ExaminationAttempt, SubscriptionPlan, BookPurchase, Withdrawal, LessonBookmark, BookReading, PostComment } from './types';
 
 export const USERS: User[] = [
   // Student with an expired weekly plan
@@ -76,7 +76,21 @@ export const SUBJECTS: Subject[] = [
 ];
 
 export const VIDEO_LESSONS: VideoLesson[] = [
-  { id: 'vl-1', subjectId: 'subj-1', title: 'Introduction to Algebra', thumbnail: 'https://picsum.photos/seed/vl-1/400/225', description: 'Learn the basics of algebraic expressions and equations.', duration: '12:45', difficulty: 'Beginner' },
+  { 
+    id: 'vl-1', 
+    subjectId: 'subj-1', 
+    title: 'Introduction to Algebra', 
+    thumbnail: 'https://picsum.photos/seed/vl-1/400/225', 
+    description: 'Learn the basics of algebraic expressions and equations.', 
+    duration: '12:45', 
+    difficulty: 'Beginner',
+    chapters: [
+        { time: 0, title: 'Introduction' },
+        { time: 120, title: 'What is a Variable?' },
+        { time: 350, title: 'Solving Simple Equations' },
+        { time: 615, title: 'Example Problems' },
+    ]
+  },
   { id: 'vl-2', subjectId: 'subj-1', title: 'Quadratic Equations', thumbnail: 'https://picsum.photos/seed/vl-2/400/225', description: 'Solving quadratic equations using various methods.', duration: '18:20', difficulty: 'Intermediate' },
   { id: 'vl-3', subjectId: 'subj-2', title: 'Understanding Shakespeare', thumbnail: 'https://picsum.photos/seed/vl-3/400/225', description: 'An introduction to the language and themes of Shakespeare.', duration: '25:10', difficulty: 'Advanced' },
   { id: 'vl-4', subjectId: 'subj-2', title: 'Grammar Essentials: Punctuation', thumbnail: 'https://picsum.photos/seed/vl-4/400/225', description: 'Master the use of commas, semicolons, and periods.', duration: '10:05', difficulty: 'Beginner' },
@@ -140,6 +154,10 @@ export const ACTIVITY_LOGS: ActivityLog[] = [
   { id: 'log-4', userId: 'user-7', type: ActivityType.PaymentReceived, text: 'Payment from Alice Smith (K10,000) via Airtel Money.', timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), read: true },
   { id: 'log-5', userId: 'user-2', type: ActivityType.QuizSubmission, text: 'Alice Smith scored 1/2 on "Introduction to Algebra" quiz.', timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), read: false },
   { id: 'log-6', userId: 'all', type: ActivityType.NewExamination, text: 'The "End of Term 1 Examination" is now available for all students.', timestamp: new Date(Date.now() - 60 * 60 * 1000), read: false },
+  { id: 'log-7', userId: 'user-8', type: ActivityType.NewPostComment, text: 'Bright Nason commented on your post in Mathematics.', timestamp: new Date(Date.now() - 20 * 60 * 60 * 1000), read: false },
+  { id: 'log-8', userId: 'user-8', type: ActivityType.NewDirectMessage, text: 'You have a new message from Alice Smith.', timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000), read: false },
+  { id: 'log-9', userId: 'user-8', type: ActivityType.NewCommentOnPostTeacher, text: 'Bright Nason commented on your post "Quiz on Friday will cover..."', timestamp: new Date(Date.now() - 20 * 60 * 60 * 1000), read: false },
+  { id: 'log-10', userId: 'user-2', type: ActivityType.NewEnrollmentInClass, text: 'Alice Smith has enrolled in your English class.', timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), read: false },
 ];
 
 export const BOOKS: Book[] = [
@@ -163,6 +181,10 @@ export const SUBJECT_POSTS: SubjectPost[] = [
     { id: 'post-2', subjectId: 'subj-1', teacherId: 'user-8', teacherName: 'Bright Nason (Teacher)', teacherProfilePic: 'https://i.pravatar.cc/150?u=user-8', type: PostType.Question, text: 'Quiz on Friday will cover the first two lessons. Any questions?', timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) },
 ];
 
+export const POST_COMMENTS: PostComment[] = [
+    { id: 'comment-1', postId: 'post-2', authorId: 'user-6', authorName: 'Bright Nason', authorProfilePic: 'https://i.pravatar.cc/150?u=user-6', text: 'I do have a question about quadratic equations. Can we review that?', timestamp: new Date(Date.now() - 20 * 60 * 60 * 1000) }
+];
+
 export const INITIAL_JOB_APPLICATIONS: JobApplication[] = [
     { id: 'app-1', name: 'John Doe', email: 'johndoe@example.com', phoneNumber: '0991234567', subjects: ['Physics', 'Chemistry'], status: ApplicationStatus.Pending, timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) },
 ];
@@ -170,6 +192,7 @@ export const INITIAL_JOB_APPLICATIONS: JobApplication[] = [
 export const INITIAL_DIRECT_MESSAGES: DirectMessage[] = [
   { id: 'dm-1', senderId: 'user-7', receiverId: 'user-2', text: 'Hi Emily, just checking in. How are the English classes going?', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000) },
   { id: 'dm-2', senderId: 'user-2', receiverId: 'user-7', text: 'Hi! They are going well. The students are very engaged with the new poetry unit.', timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000) },
+  { id: 'dm-3', senderId: 'user-1', receiverId: 'user-8', text: 'Good morning sir, I was having trouble with the algebra homework, specifically question 3.', timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000) },
 ];
 
 export const EXAMINATION_QUESTIONS: ExaminationQuestion[] = [
