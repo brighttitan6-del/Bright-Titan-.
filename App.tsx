@@ -1658,11 +1658,12 @@ export const App: React.FC = () => {
             addToast(`Joining live class: ${liveClass.title}`, 'success');
         }
 
-        if (subscriptionPlan === SubscriptionPlan.Monthly) {
+        // FIX: Check if user has a monthly plan OR has paid for this specific class.
+        if (subscriptionPlan === SubscriptionPlan.Monthly || currentUser.subscription?.liveClassAccessId === liveClass.id) {
             startLiveSession();
-        } else if (subscriptionStatus === 'Active') {
+        } else if (subscriptionStatus === 'Active') { // Daily/Weekly active users need to top-up
             setPendingLiveClass(liveClass);
-        } else {
+        } else { // Expired or None subscription
             addToast("You need an active subscription to join live classes.", "error");
             setPaymentModalOpen(true);
         }
@@ -2688,12 +2689,12 @@ export const App: React.FC = () => {
             case 'dashboard':
             default:
                 if (currentUser.role === Role.Student) {
-                    return <StudentDashboard user={currentUser} subscriptionStatus={subscriptionStatus} subscriptionPlan={subscriptionPlan} allSubjects={subjects} allLessons={lessons} allLiveClasses={liveClasses} lessonCompletions={completions} bookmarks={bookmarks} activeLiveClass={liveClasses.find(lc => lc.startTime <= new Date() && new Date(lc.startTime.getTime() + 2*60*60*1000) > new Date()) || null} onSelectSubject={handleSelectSubject} onJoinLiveClass={handleJoinLiveClass} onPayForLessons={() => setPaymentModalOpen(true)} onWatchLesson={setSelectedLesson} onNavigate={setCurrentView} />;
+                    return <StudentDashboard user={currentUser} subscriptionStatus={subscriptionStatus} subscriptionPlan={subscriptionPlan} allSubjects={subjects} allLessons={lessons} allLiveClasses={liveClasses} bookmarks={bookmarks} activeLiveClass={liveClasses.find(lc => lc.startTime <= new Date() && new Date(lc.startTime.getTime() + 2*60*60*1000) > new Date()) || null} onJoinLiveClass={handleJoinLiveClass} onPayForLessons={() => setPaymentModalOpen(true)} onWatchLesson={setSelectedLesson} onNavigate={setCurrentView} />;
                 }
                 if (currentUser.role === Role.Teacher) {
                     const teacherSubjects = subjects.filter(s => s.teacherId === currentUser.id);
                     const teacherActivity = activityLogs.filter(log => log.userId === currentUser.id);
-                    return <TeacherDashboard user={currentUser} subjects={teacherSubjects} lessons={lessons} activityLogs={teacherActivity} onStartLiveClass={handleStartLiveClass} onUploadLesson={handleUploadLesson} onCreatePost={handleCreatePost} />;
+                    return <TeacherDashboard user={currentUser} subjects={teacherSubjects} activityLogs={teacherActivity} onStartLiveClass={handleStartLiveClass} onUploadLesson={handleUploadLesson} onCreatePost={handleCreatePost} />;
                 }
                 if (currentUser.role === Role.Owner) {
                     return <OwnerDashboard user={currentUser} allUsers={users} payments={payments} withdrawals={withdrawals} messages={directMessages} applications={jobApplications} activityLogs={activityLogs} onUpdateApplicationStatus={handleUpdateApplicationStatus} onWithdraw={handleWithdrawal} onViewUser={setSelectedUserForDetail} addToast={addToast} />;
