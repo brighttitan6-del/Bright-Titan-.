@@ -143,6 +143,9 @@ export enum ActivityType {
   NewBookPurchase = 'New Book Purchase',
   LiveClassStarted = 'Live Class Started',
   NewApplication = 'New Job Application',
+  NewBookReading = 'Book Opened',
+  NewExamination = 'New Examination',
+  ExaminationSubmission = 'Examination Submission',
 }
 
 export interface ActivityLog {
@@ -166,6 +169,12 @@ export interface Book {
 export interface BookPurchase {
     studentId: string;
     bookId: string;
+}
+
+export interface BookReading {
+    studentId: string;
+    bookId: string;
+    lastReadAt: Date;
 }
 
 export interface LessonBookmark {
@@ -223,14 +232,18 @@ export interface Examination {
   id: string;
   title: string;
   questions: ExaminationQuestion[];
+  durationMinutes: number; // Duration of the exam in minutes
 }
 
 export interface ExaminationAttempt {
   id: string;
   studentId: string;
+  studentName: string;
   examinationId: string;
+  examinationTitle: string;
   answers: Record<string, string>; // questionId -> selectedOption
   score: number; // overall score
+  totalQuestions: number;
   scoresBySubject: Record<string, { score: number; total: number }>;
   completedAt: Date;
 }

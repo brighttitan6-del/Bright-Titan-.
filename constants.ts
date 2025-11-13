@@ -1,4 +1,4 @@
-import { Role, User, Subject, VideoLesson, LiveClass, PaymentRecord, Quiz, QuizAttempt, Enrollment, LessonCompletion, ActivityLog, ActivityType, Book, SubjectPost, PostType, JobApplication, ApplicationStatus, DirectMessage, ExaminationQuestion, Examination, ExaminationAttempt, SubscriptionPlan, BookPurchase, Withdrawal, LessonBookmark } from './types';
+import { Role, User, Subject, VideoLesson, LiveClass, PaymentRecord, Quiz, QuizAttempt, Enrollment, LessonCompletion, ActivityLog, ActivityType, Book, SubjectPost, PostType, JobApplication, ApplicationStatus, DirectMessage, ExaminationQuestion, Examination, ExaminationAttempt, SubscriptionPlan, BookPurchase, Withdrawal, LessonBookmark, BookReading } from './types';
 
 export const USERS: User[] = [
   // Student with an expired weekly plan
@@ -134,11 +134,12 @@ export const LESSON_COMPLETIONS: LessonCompletion[] = [
 ];
 
 export const ACTIVITY_LOGS: ActivityLog[] = [
-  { id: 'log-1', userId: 'user-2', type: ActivityType.NewLesson, text: 'Emily Carter uploaded a new lesson: "Understanding Shakespeare"', timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), read: false },
+  { id: 'log-1', userId: 'user-2', type: ActivityType.NewLesson, text: 'Emily Carter uploaded a new lesson: "Understanding Shakespeare"', timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), read: true },
   { id: 'log-2', userId: 'all', type: ActivityType.LiveReminder, text: 'Live Q&A: Calculus Problems is starting in 2 hours.', timestamp: new Date(Date.now() + 10000), read: false },
   { id: 'log-3', userId: 'user-7', type: ActivityType.NewEnrollment, text: 'Alice Smith enrolled in Mathematics.', timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), read: false },
-  { id: 'log-4', userId: 'user-7', type: ActivityType.PaymentReceived, text: 'Payment from Alice Smith (K10,000) via Airtel Money.', timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), read: false },
+  { id: 'log-4', userId: 'user-7', type: ActivityType.PaymentReceived, text: 'Payment from Alice Smith (K10,000) via Airtel Money.', timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), read: true },
   { id: 'log-5', userId: 'user-2', type: ActivityType.QuizSubmission, text: 'Alice Smith scored 1/2 on "Introduction to Algebra" quiz.', timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), read: false },
+  { id: 'log-6', userId: 'all', type: ActivityType.NewExamination, text: 'The "End of Term 1 Examination" is now available for all students.', timestamp: new Date(Date.now() - 60 * 60 * 1000), read: false },
 ];
 
 export const BOOKS: Book[] = [
@@ -149,6 +150,8 @@ export const BOOKS: Book[] = [
 ];
 
 export const BOOK_PURCHASES: BookPurchase[] = [];
+
+export const BOOK_READINGS: BookReading[] = [];
 
 export const BOOKMARKS: LessonBookmark[] = [
     { studentId: 'user-6', lessonId: 'vl-3' },
@@ -185,24 +188,28 @@ export const EXAMINATION_QUESTIONS: ExaminationQuestion[] = [
 ];
 
 export const EXAMINATIONS: Examination[] = [
-    { id: 'exam-1', title: 'End of Term 1 Examination', questions: EXAMINATION_QUESTIONS },
+    { id: 'exam-1', title: 'End of Term 1 Examination', questions: EXAMINATION_QUESTIONS, durationMinutes: 10 },
 ];
 
 export const EXAMINATION_ATTEMPTS: ExaminationAttempt[] = [
-    // Example of a completed attempt
-    // {
-    //     id: 'exatt-1',
-    //     studentId: 'user-1',
-    //     examinationId: 'exam-1',
-    //     answers: { 'exq-m1': '4', 'exq-e1': 'Joyful', 'exq-b1': 'Mitochondrion' },
-    //     score: 3,
-    //     scoresBySubject: {
-    //         'subj-1': { score: 1, total: 1 },
-    //         'subj-2': { score: 1, total: 1 },
-    //         'subj-3': { score: 1, total: 1 },
-    //     },
-    //     completedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
-    // }
+    {
+        id: 'exatt-1',
+        studentId: 'user-6',
+        studentName: 'Bright Nason',
+        examinationId: 'exam-1',
+        examinationTitle: 'End of Term 1 Examination',
+        answers: { 'exq-m1': '4', 'exq-e1': 'Joyful', 'exq-b1': 'Mitochondrion', 'exq-c1': 'H2O', 'exq-m2': '2', 'exq-e2': 'Mice', 'exq-ch1': 'Hello' },
+        score: 6,
+        totalQuestions: 7,
+        scoresBySubject: {
+            'subj-1': { score: 1, total: 2 },
+            'subj-2': { score: 2, total: 2 },
+            'subj-3': { score: 1, total: 1 },
+            'subj-4': { score: 1, total: 1 },
+            'subj-5': { score: 1, total: 1 },
+        },
+        completedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
+    }
 ];
 
 export const WITHDRAWALS: Withdrawal[] = [
