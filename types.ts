@@ -11,6 +11,22 @@ export enum ApplicationStatus {
     Rejected = 'Rejected',
 }
 
+export enum SubscriptionPlan {
+  None = 'None',
+  Daily = 'Daily',
+  Weekly = 'Weekly',
+  Monthly = 'Monthly',
+}
+
+export interface StudentSubscription {
+  plan: SubscriptionPlan;
+  startDate: Date;
+  endDate: Date;
+  // Used to track one-time access for a specific live class
+  liveClassAccessId?: string; 
+}
+
+
 export interface JobApplication {
     id: string;
     name: string;
@@ -30,6 +46,7 @@ export interface User {
   role: Role;
   profilePicture?: string;
   password?: string;
+  subscription?: StudentSubscription;
 }
 
 export interface Teacher extends User {
@@ -76,13 +93,11 @@ export interface ChatMessage {
 export interface PaymentRecord {
   id:string;
   studentId: string;
-  date: string; // ISO string
+  studentName: string;
+  date: Date;
   amount: number;
   method: string;
-  phoneNumber?: string;
-  accountNumber?: string;
-  purchaseType?: 'tuition' | 'book';
-  purchaseId?: string; // e.g., bookId
+  plan: SubscriptionPlan | 'LiveStreamTopUp' | 'BookPurchase';
 }
 
 export interface Question {
@@ -126,11 +141,12 @@ export enum ActivityType {
   PaymentReceived = 'Payment Received',
   NewQuizCreated = 'New Quiz Created',
   NewBookPurchase = 'New Book Purchase',
+  LiveClassStarted = 'Live Class Started',
 }
 
 export interface ActivityLog {
   id: string;
-  userId: string;
+  userId: string; // Can be a specific user or 'all' for broadcasts
   type: ActivityType;
   text: string;
   timestamp: Date;
@@ -187,4 +203,28 @@ export interface DirectMessage {
   receiverId: string;
   text: string;
   timestamp: Date;
+}
+
+export interface ExaminationQuestion {
+  id: string;
+  subjectId: string;
+  questionText: string;
+  options: string[];
+  correctAnswer: string;
+}
+
+export interface Examination {
+  id: string;
+  title: string;
+  questions: ExaminationQuestion[];
+}
+
+export interface ExaminationAttempt {
+  id: string;
+  studentId: string;
+  examinationId: string;
+  answers: Record<string, string>; // questionId -> selectedOption
+  score: number; // overall score
+  scoresBySubject: Record<string, { score: number; total: number }>;
+  completedAt: Date;
 }

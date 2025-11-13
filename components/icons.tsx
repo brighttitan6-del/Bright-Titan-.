@@ -460,3 +460,11 @@ export const TrophyIcon = ({ className, title }: IconProps) => (
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-3.375m0 0a1.5 1.5 0 011.5-1.5h.008a1.5 1.5 0 011.5 1.5m-3 0a1.5 1.5 0 00-1.5-1.5H9a1.5 1.5 0 00-1.5 1.5M12 3V6" />
     </svg>
 );
+
+export const ClipboardDocumentCheckIcon = ({ className, title }: IconProps) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        {title && <title>{title}</title>}
+        <path strokeLinecap="round" strokeLinejoin="round" d="M10.125 2.25h-4.5c-1.125 0-2.25.9-2.25 2.25v13.5c0 1.125.9 2.25 2.25 2.25h9c1.125 0 2.25-.9 2.25-2.25v-9.75M10.125 2.25c.414 0 .828.125 1.209.354a4.5 4.5 0 015.386 5.386c.229.381.354.795.354 1.209v6.75M10.125 2.25a4.5 4.5 0 00-4.5 4.5v.375" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16.875 10.125l-3.75 3.75-1.5-1.5" />
+    </svg>
+);
