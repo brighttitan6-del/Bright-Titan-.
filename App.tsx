@@ -11,7 +11,7 @@ const APP_OWNER_ID = 'user-7'; // Mr. Nyalugwe's ID
 // ----- Helper Functions -----
 type SubscriptionStatus = 'Active' | 'Expired' | 'None';
 const getSubscriptionStatus = (user: User | null): { status: SubscriptionStatus; plan: SubscriptionPlan } => {
-    if (!user || !user.subscription || user.subscription.plan === SubscriptionPlan.None) {
+    if (!user || user.role === Role.Teacher || user.role === Role.Owner || !user.subscription || user.subscription.plan === SubscriptionPlan.None) {
         return { status: 'None', plan: SubscriptionPlan.None };
     }
     // This is the core access control logic. It checks if the current time
@@ -22,6 +22,7 @@ const getSubscriptionStatus = (user: User | null): { status: SubscriptionStatus;
     }
     return { status: 'Active', plan: user.subscription.plan };
 };
+
 
 const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -180,11 +181,13 @@ interface HeaderProps {
   onNavigateToSettings: () => void;
   unreadCount: number;
   onToggleNotifications: () => void;
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
 }
-const Header: React.FC<HeaderProps> = ({ user, onLogout, title, onBack, onNavigateToSettings, unreadCount, onToggleNotifications }) => {
+const Header: React.FC<HeaderProps> = ({ user, onLogout, title, onBack, onNavigateToSettings, unreadCount, onToggleNotifications, searchQuery, onSearchChange }) => {
   return (
     <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-sm p-4 sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 dark:border-slate-700">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-1">
         {onBack ? (
           <button onClick={onBack} className="text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400" aria-label="Go back">
             <ArrowLeftIcon className="w-6 h-6" />
@@ -192,9 +195,24 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, title, onBack, onNaviga
         ) : (
             <SmartLearnLogo className="w-8 h-8" />
         )}
-         <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">{title}</h1>
+         <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 hidden sm:block">{title}</h1>
       </div>
       <div className="flex items-center gap-4">
+        <div className="relative flex-grow max-w-xs md:max-w-sm">
+            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+            <input
+                type="text"
+                placeholder="Search subjects, lessons..."
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                className="w-full pl-10 pr-9 py-2 rounded-full border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            />
+            {searchQuery && (
+                <button onClick={() => onSearchChange('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <XCircleIcon className="w-5 h-5" />
+                </button>
+            )}
+        </div>
         <button onClick={onToggleNotifications} className="text-slate-500 dark:text-slate-400 relative" aria-label="View notifications">
             <BellIcon className="w-6 h-6" />
             {unreadCount > 0 && <span className="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900"></span>}
@@ -1406,6 +1424,67 @@ const JobApplicationModal: React.FC<{
     );
 };
 
+interface SearchResults {
+    subjects: Subject[];
+    lessons: VideoLesson[];
+    liveClasses: LiveClass[];
+}
+
+const SearchResultsPanel: React.FC<{
+    results: SearchResults;
+    onSelectSubject: (subject: Subject) => void;
+    onSelectLesson: (lesson: VideoLesson) => void;
+    onSelectLiveClass: (liveClass: LiveClass) => void;
+}> = ({ results, onSelectSubject, onSelectLesson, onSelectLiveClass }) => {
+    const hasResults = results.subjects.length > 0 || results.lessons.length > 0 || results.liveClasses.length > 0;
+
+    const ResultItem: React.FC<{ icon: React.ReactNode; title: string; subtitle: string; onClick: () => void }> = ({ icon, title, subtitle, onClick }) => (
+        <div onClick={onClick} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">
+            <div className="flex-shrink-0 bg-slate-100 dark:bg-slate-700 p-2 rounded-full">
+                {icon}
+            </div>
+            <div>
+                <p className="font-semibold text-slate-800 dark:text-slate-100">{title}</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>
+            </div>
+        </div>
+    );
+
+    return (
+        <div className="absolute top-full right-4 mt-2 w-full max-w-md bg-white dark:bg-slate-800 rounded-lg shadow-lg border dark:border-slate-700 z-30 animate-fade-in-up overflow-hidden">
+            <div className="max-h-96 overflow-y-auto p-2">
+                {!hasResults && <p className="text-center text-slate-500 p-4">No results found.</p>}
+                
+                {results.subjects.length > 0 && (
+                    <div className="mb-2">
+                        <h3 className="px-2 py-1 text-xs font-bold text-slate-400 uppercase">Subjects</h3>
+                        {results.subjects.map(subject => (
+                            <ResultItem key={subject.id} icon={<AcademicCapIcon className="w-5 h-5 text-slate-500" />} title={subject.name} subtitle={subject.teacherName} onClick={() => onSelectSubject(subject)} />
+                        ))}
+                    </div>
+                )}
+                {results.lessons.length > 0 && (
+                    <div className="mb-2">
+                        <h3 className="px-2 py-1 text-xs font-bold text-slate-400 uppercase">Video Lessons</h3>
+                        {results.lessons.map(lesson => (
+                             <ResultItem key={lesson.id} icon={<VideoCameraIcon className="w-5 h-5 text-slate-500" />} title={lesson.title} subtitle={`Duration: ${lesson.duration}`} onClick={() => onSelectLesson(lesson)} />
+                        ))}
+                    </div>
+                )}
+                {results.liveClasses.length > 0 && (
+                    <div>
+                         <h3 className="px-2 py-1 text-xs font-bold text-slate-400 uppercase">Live Classes</h3>
+                         {results.liveClasses.map(lc => (
+                              <ResultItem key={lc.id} icon={<RssIcon className="w-5 h-5 text-red-500" />} title={lc.title} subtitle={lc.teacherName} onClick={() => onSelectLiveClass(lc)} />
+                         ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+
 export const App: React.FC = () => {
     // Data state
     const [users, setUsers] = useState<User[]>(USERS);
@@ -1457,6 +1536,8 @@ export const App: React.FC = () => {
     const [selectedUserForDetail, setSelectedUserForDetail] = useState<User | null>(null);
     const [activeLiveStream, setActiveLiveStream] = useState<LiveClass | null>(null);
     const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
     
     // Derived state
     const { status: subscriptionStatus, plan: subscriptionPlan } = getSubscriptionStatus(currentUser);
@@ -1465,6 +1546,46 @@ export const App: React.FC = () => {
     // Refs
     const notificationsRef = useRef<HTMLDivElement>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const searchRef = useRef<HTMLDivElement>(null);
+
+    // Debounced search effect
+    useEffect(() => {
+        if (searchQuery.trim() === '') {
+            setSearchResults(null);
+            return;
+        }
+
+        const handler = setTimeout(() => {
+            const lowerCaseQuery = searchQuery.toLowerCase();
+            const filteredSubjects = subjects.filter(s => s.name.toLowerCase().includes(lowerCaseQuery));
+            const filteredLessons = lessons.filter(l => l.title.toLowerCase().includes(lowerCaseQuery));
+            const filteredLiveClasses = liveClasses.filter(lc => lc.title.toLowerCase().includes(lowerCaseQuery));
+            
+            setSearchResults({
+                subjects: filteredSubjects,
+                lessons: filteredLessons,
+                liveClasses: filteredLiveClasses,
+            });
+        }, 300);
+
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [searchQuery, subjects, lessons, liveClasses]);
+
+    // Close search/notifications on outside click
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+                setSearchQuery('');
+            }
+             if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
+                setNotificationsPanelOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [searchRef, notificationsRef]);
 
     // Get audio element on mount
     useEffect(() => {
@@ -1506,17 +1627,6 @@ export const App: React.FC = () => {
             setIsMusicPlaying(!isMusicPlaying);
         }
     };
-
-    // Close notifications panel on outside click
-    useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
-                setNotificationsPanelOpen(false);
-            }
-        }
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [notificationsRef]);
 
 
     // Open payment modal when a sign-up is pending
@@ -1616,6 +1726,28 @@ export const App: React.FC = () => {
         addToast('Your application has been submitted successfully!', 'success');
     };
 
+    const handleMarkLessonComplete = (lessonId: string) => {
+        if (!currentUser || currentUser.role !== Role.Student) return;
+
+        const alreadyCompleted = completions.some(c => c.studentId === currentUser.id && c.lessonId === lessonId);
+        if (!alreadyCompleted) {
+            const newCompletion: LessonCompletion = {
+                studentId: currentUser.id,
+                lessonId: lessonId,
+                completedAt: new Date(),
+            };
+            setCompletions(prev => [...prev, newCompletion]);
+        }
+    };
+
+    const handleCloseVideoPlayer = () => {
+        if (selectedLesson) {
+            handleMarkLessonComplete(selectedLesson.id);
+            addToast("Lesson completed!", 'success');
+        }
+        setSelectedLesson(null);
+    };
+
     const handleBack = () => {
         if (activeLiveStream) {
             setActiveLiveStream(null);
@@ -1642,7 +1774,7 @@ export const App: React.FC = () => {
     };
 
     const handleSelectSubject = (subject: Subject) => {
-        if (subscriptionStatus !== 'Active') {
+        if (currentUser?.role === Role.Student && subscriptionStatus !== 'Active') {
             addToast("Please subscribe to access subjects.", "info");
             setPaymentModalOpen(true);
             return;
@@ -2478,312 +2610,198 @@ export const App: React.FC = () => {
                         <p><strong>Email:</strong> {selectedUserForDetail.email}</p>
                         <p><strong>Role:</strong> {selectedUserForDetail.role}</p>
                     </div>
-
-                    {selectedUserForDetail.role === Role.Student && (
-                        <>
-                            <h3 className="font-bold text-lg border-t pt-4 dark:border-slate-600">Student Activity</h3>
-                            <div className="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                                <p><strong>Subscription:</strong> {getSubscriptionStatus(selectedUserForDetail).plan} ({getSubscriptionStatus(selectedUserForDetail).status})</p>
+                    {selectedUserForDetail.role === Role.Student && userPayments.length > 0 && (
+                        <div>
+                            <h4 className="font-bold mb-1">Payment History</h4>
+                            <div className="max-h-40 overflow-y-auto space-y-1">
+                                {userPayments.map(p => <p key={p.id} className="p-2 bg-slate-200 dark:bg-slate-600 rounded">K{p.amount} for {p.plan} on {p.date.toLocaleDateString()}</p>)}
                             </div>
-                            <div>
-                                <h4 className="font-semibold mb-2">Payment History ({userPayments.length})</h4>
-                                <div className="max-h-32 overflow-y-auto space-y-1 text-xs">
-                                    {userPayments.map(p => <p key={p.id}>K{p.amount.toLocaleString()} for {p.plan} on {p.date.toLocaleDateString()}</p>)}
-                                </div>
+                        </div>
+                    )}
+                     {selectedUserForDetail.role === Role.Student && userExamAttempts.length > 0 && (
+                        <div>
+                            <h4 className="font-bold mb-1">Exam History</h4>
+                            <div className="max-h-40 overflow-y-auto space-y-1">
+                                {userExamAttempts.map(a => <p key={a.id} className="p-2 bg-slate-200 dark:bg-slate-600 rounded">{a.examinationTitle}: {a.score}/{a.totalQuestions}</p>)}
                             </div>
-                            <div>
-                                <h4 className="font-semibold mb-2">Exam Attempts ({userExamAttempts.length})</h4>
-                                <div className="max-h-32 overflow-y-auto space-y-1 text-xs">
-                                    {userExamAttempts.map(a => <p key={a.id}>{a.examinationTitle}: {a.score}/{a.totalQuestions}</p>)}
-                                </div>
-                            </div>
-                        </>
+                        </div>
                     )}
                     {selectedUserForDetail.role === Role.Teacher && (
-                         <>
-                            <h3 className="font-bold text-lg border-t pt-4 dark:border-slate-600">Teacher Details</h3>
-                            <div>
-                                <h4 className="font-semibold mb-2">Assigned Subjects ({teacherSubjects.length})</h4>
-                                <p>{teacherSubjects.map(s => s.name).join(', ')}</p>
-                            </div>
-                         </>
+                         <div>
+                            <h4 className="font-bold mb-1">Assigned Subjects</h4>
+                            <p>{teacherSubjects.map(s => s.name).join(', ') || 'None'}</p>
+                        </div>
                     )}
                 </div>
             </Modal>
         )
     }
 
-    const MessagesView: React.FC = () => {
-        if(!currentUser) return null;
-        const messagesEndRef = useRef<HTMLDivElement>(null);
-        const [newMessage, setNewMessage] = useState('');
+    const MainContent: React.FC = () => {
+        if (!currentUser) return null;
 
-        useEffect(() => {
-            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-        }, [directMessages, activeConversationId]);
-        
+        if (activeLiveStream) return <LiveStreamView />;
 
-        const myConversations = [...new Set(directMessages
-            .filter(m => m.senderId === currentUser.id || m.receiverId === currentUser.id)
-            .map(m => m.senderId === currentUser.id ? m.receiverId : m.senderId)
-        )];
-
-        if(activeConversationId) {
-            const otherUser = users.find(u => u.id === activeConversationId);
-            if(!otherUser) return null;
-
-            const conversationMessages = directMessages
-                .filter(m => (m.senderId === currentUser.id && m.receiverId === otherUser.id) || (m.senderId === otherUser.id && m.receiverId === currentUser.id))
-                .sort((a,b) => a.timestamp.getTime() - b.timestamp.getTime());
-            
-            const handleMessageSubmit = (e: React.FormEvent) => {
-                e.preventDefault();
-                if(newMessage.trim()) {
-                    handleSendMessage(otherUser.id, newMessage.trim());
-                    setNewMessage('');
-                }
-            };
-            
-            return (
-                <div className="flex flex-col h-full">
-                    <div className="flex-grow overflow-y-auto p-4 space-y-4">
-                        {conversationMessages.map(msg => (
-                            <div key={msg.id} className={`flex items-end gap-2 ${msg.senderId === currentUser.id ? 'justify-end' : 'justify-start'}`}>
-                                {msg.senderId !== currentUser.id && <img src={otherUser.profilePicture} alt={otherUser.name} className="w-8 h-8 rounded-full"/>}
-                                <div className={`max-w-xs md:max-w-md px-4 py-2 rounded-2xl ${msg.senderId === currentUser.id ? 'bg-teal-500 text-white rounded-br-none' : 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-bl-none'}`}>
-                                    <p>{msg.text}</p>
-                                </div>
-                            </div>
-                        ))}
-                        <div ref={messagesEndRef} />
-                    </div>
-                     <form onSubmit={handleMessageSubmit} className="p-4 border-t dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center gap-2">
-                        <input type="text" value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder="Type a message..." className="flex-1 px-4 py-2 rounded-full border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500"/>
-                        <button type="submit" className="p-3 bg-teal-500 text-white rounded-full hover:bg-teal-600"><SendIcon className="w-5 h-5"/></button>
-                    </form>
-                </div>
-            )
+        if (selectedSubject) {
+            return <SubjectDetailView 
+                user={currentUser}
+                subject={selectedSubject} 
+                lessons={lessons.filter(l => l.subjectId === selectedSubject.id)}
+                posts={subjectPosts.filter(p => p.subjectId === selectedSubject.id)}
+                comments={postComments}
+                completions={completions}
+                bookmarks={bookmarks}
+                onWatchLesson={setSelectedLesson}
+                onToggleBookmark={handleToggleBookmark}
+                onAddComment={handleAddComment}
+            />;
         }
-
-        return (
-            <div className="p-4 space-y-3">
-                 {myConversations.map(userId => {
-                    const user = users.find(u => u.id === userId);
-                    const lastMessage = directMessages.filter(m => m.senderId === userId || m.receiverId === userId).sort((a,b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
-                    if(!user) return null;
-                    return (
-                        <div key={user.id} onClick={() => setActiveConversationId(user.id)} className="bg-white dark:bg-slate-800 p-3 rounded-lg flex items-center gap-4 shadow-sm cursor-pointer hover-lift">
-                            <img src={user.profilePicture} alt={user.name} className="w-12 h-12 rounded-full"/>
-                            <div className="flex-grow">
-                                <h3 className="font-semibold text-slate-800 dark:text-slate-100">{user.name}</h3>
-                                <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{lastMessage.senderId === currentUser.id && 'You: '}{lastMessage.text}</p>
-                            </div>
-                        </div>
-                    )
-                 })}
-            </div>
-        )
-    };
-    
-    const SubjectsView: React.FC<{
-        user: User;
-        allSubjects: Subject[];
-        allLessons: VideoLesson[];
-        lessonCompletions: LessonCompletion[];
-        activeLiveClass: LiveClass | null;
-        onSelectSubject: (subject: Subject) => void;
-    }> = ({ user, allSubjects, allLessons, lessonCompletions, activeLiveClass, onSelectSubject }) => {
-        const [searchTerm, setSearchTerm] = useState('');
-        const hasActiveSubscription = getSubscriptionStatus(user).status === 'Active';
-
-        let displayedSubjects = allSubjects;
-        if (user.role === Role.Teacher) {
-            displayedSubjects = allSubjects.filter(s => s.teacherId === user.id);
-        }
-
-        const filteredSubjects = displayedSubjects.filter(s => 
-            s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-            s.teacherName.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-
-        return (
-            <div className="p-4 space-y-6 animate-fade-in-up">
-                <div className="relative">
-                    <input 
-                        type="text"
-                        placeholder="Search subjects or teachers..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
-                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                </div>
-                 <div className="grid grid-cols-2 gap-4">
-                    {filteredSubjects.map(subject => {
-                         const lessonsForSubject = allLessons.filter(l => l.subjectId === subject.id);
-                         const completedLessonsCount = lessonCompletions.filter(
-                             c => c.studentId === user.id && lessonsForSubject.some(l => l.id === c.lessonId)
-                         ).length;
-                         const progress = lessonsForSubject.length > 0 && user.role === Role.Student
-                             ? Math.round((completedLessonsCount / lessonsForSubject.length) * 100) 
-                             : 0;
-                        const isLiveNow = activeLiveClass?.subjectId === subject.id;
-
-                        return (
-                            <SubjectCard 
-                                key={subject.id} 
-                                subject={subject} 
-                                onClick={() => onSelectSubject(subject)} 
-                                progress={progress}
-                                isLocked={user.role === Role.Student && !hasActiveSubscription}
-                                isLive={isLiveNow}
-                            />
-                        );
-                    })}
-                </div>
-            </div>
-        );
-    }
-
-    // ----- Render Logic -----
-    if (!currentUser) {
-        return (
-            <>
-                <ToastContainer toasts={toasts} onDismiss={dismissToast} />
-                <AuthScreen
-                    onLogin={handleLogin}
-                    onSignUp={handleSignUp}
-                    onGoogleAuth={handleGoogleAuth}
-                    onApply={() => setApplicationModalOpen(true)}
-                />
-                <JobApplicationModal 
-                    isOpen={isApplicationModalOpen} 
-                    onClose={() => setApplicationModalOpen(false)}
-                    onSubmit={handleJobApplicationSubmit}
-                />
-            </>
-        );
-    }
-
-    const renderMainContent = () => {
-        if(activeLiveStream) return <LiveStreamView />;
-        if (selectedLesson) {
-            const subject = subjects.find(s => s.id === selectedLesson.subjectId);
-            return subject ? <VideoPlayerModal lesson={selectedLesson} subject={subject} onClose={() => setSelectedLesson(null)} /> : null;
-        }
-        if (selectedSubject) return <SubjectDetailView user={currentUser} subject={selectedSubject} lessons={lessons.filter(l => l.subjectId === selectedSubject.id)} posts={subjectPosts.filter(p=>p.subjectId === selectedSubject.id)} comments={postComments} completions={completions} bookmarks={bookmarks} onWatchLesson={setSelectedLesson} onToggleBookmark={handleToggleBookmark} onAddComment={handleAddComment} />;
 
         switch (currentView) {
             case 'subjects':
-                return <SubjectsView user={currentUser} allSubjects={subjects} allLessons={lessons} lessonCompletions={completions} activeLiveClass={liveClasses.find(lc => lc.startTime <= new Date() && new Date(lc.startTime.getTime() + 2*60*60*1000) > new Date()) || null} onSelectSubject={handleSelectSubject}/>
-            case 'messages':
-                return <MessagesView />;
+                const liveClassesBySubject = liveClasses.reduce((acc, lc) => {
+                    if (lc.startTime > new Date()) acc.add(lc.subjectId);
+                    return acc;
+                }, new Set());
+                return (
+                     <div className="p-4 animate-fade-in-up">
+                        <h1 className="text-2xl font-bold mb-4 text-slate-800 dark:text-slate-100">All Subjects</h1>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            {subjects.map(subject => {
+                                const subjectLessons = lessons.filter(l => l.subjectId === subject.id);
+                                const completedLessons = completions.filter(c => c.studentId === currentUser.id && subjectLessons.some(l => l.id === c.lessonId)).length;
+                                const progress = subjectLessons.length > 0 ? Math.round((completedLessons / subjectLessons.length) * 100) : 0;
+                                
+                                return <SubjectCard 
+                                    key={subject.id} 
+                                    subject={subject} 
+                                    onClick={() => handleSelectSubject(subject)}
+                                    progress={progress}
+                                    isLocked={currentUser.role === Role.Student && subscriptionStatus !== 'Active'}
+                                    isLive={liveClassesBySubject.has(subject.id)}
+                                />;
+                            })}
+                        </div>
+                    </div>
+                );
+            case 'live':
+                // This view is now handled by the activeLiveStream state
+                return <div>Live</div>;
             case 'bookstore':
-                return <BookStoreView books={BOOKS} purchases={bookPurchases} studentId={currentUser.id} onBuyBook={handleBuyBook} onReadBook={handleOpenBookReader} />
+                return <BookStoreView books={BOOKS} purchases={bookPurchases} studentId={currentUser.id} onBuyBook={handleBuyBook} onReadBook={handleOpenBookReader} />;
             case 'examinations':
                 return <ExaminationsView />;
             case 'takeExam':
-                 return <TakeExaminationView />;
+                return <TakeExaminationView />;
             case 'examResults':
                 return <ExaminationResultsView />;
             case 'dashboard':
             default:
                 if (currentUser.role === Role.Student) {
-                    return <StudentDashboard user={currentUser} subscriptionStatus={subscriptionStatus} subscriptionPlan={subscriptionPlan} allSubjects={subjects} allLessons={lessons} allLiveClasses={liveClasses} bookmarks={bookmarks} activeLiveClass={liveClasses.find(lc => lc.startTime <= new Date() && new Date(lc.startTime.getTime() + 2*60*60*1000) > new Date()) || null} onJoinLiveClass={handleJoinLiveClass} onPayForLessons={() => setPaymentModalOpen(true)} onWatchLesson={setSelectedLesson} onNavigate={setCurrentView} />;
+                    return <StudentDashboard 
+                        user={currentUser}
+                        subscriptionStatus={subscriptionStatus}
+                        subscriptionPlan={subscriptionPlan}
+                        allSubjects={subjects}
+                        allLessons={lessons}
+                        allLiveClasses={liveClasses}
+                        bookmarks={bookmarks}
+                        activeLiveClass={liveClasses.find(lc => (lc.startTime.getTime() < Date.now()) && (lc.startTime.getTime() + 60*60*1000 > Date.now())) || null}
+                        onJoinLiveClass={handleJoinLiveClass}
+                        onPayForLessons={() => setPaymentModalOpen(true)}
+                        onWatchLesson={setSelectedLesson}
+                        onNavigate={(view) => setCurrentView(view)}
+                    />;
                 }
                 if (currentUser.role === Role.Teacher) {
-                    const teacherSubjects = subjects.filter(s => s.teacherId === currentUser.id);
-                    const teacherActivity = activityLogs.filter(log => log.userId === currentUser.id);
-                    return <TeacherDashboard user={currentUser} subjects={teacherSubjects} activityLogs={teacherActivity} onStartLiveClass={handleStartLiveClass} onUploadLesson={handleUploadLesson} onCreatePost={handleCreatePost} />;
+                    return <TeacherDashboard 
+                        user={currentUser}
+                        subjects={subjects.filter(s => s.teacherId === currentUser.id)}
+                        activityLogs={activityLogs.filter(log => log.userId === currentUser.id)}
+                        onStartLiveClass={handleStartLiveClass}
+                        onUploadLesson={handleUploadLesson}
+                        onCreatePost={handleCreatePost}
+                    />;
                 }
                 if (currentUser.role === Role.Owner) {
-                    return <OwnerDashboard user={currentUser} allUsers={users} payments={payments} withdrawals={withdrawals} messages={directMessages} applications={jobApplications} activityLogs={activityLogs} onUpdateApplicationStatus={handleUpdateApplicationStatus} onWithdraw={handleWithdrawal} onViewUser={setSelectedUserForDetail} addToast={addToast} />;
+                    return <OwnerDashboard
+                        user={currentUser}
+                        allUsers={users}
+                        payments={payments}
+                        withdrawals={withdrawals}
+                        messages={directMessages}
+                        applications={jobApplications}
+                        activityLogs={activityLogs}
+                        onUpdateApplicationStatus={handleUpdateApplicationStatus}
+                        onWithdraw={handleWithdrawal}
+                        onViewUser={setSelectedUserForDetail}
+                        addToast={addToast}
+                     />;
                 }
-                return null;
         }
-    };
+    }
 
-    const getHeaderTitle = () => {
-        if(activeLiveStream) return "Live Class";
-        if(selectedSubject) return selectedSubject.name;
-        switch (currentView) {
-            case 'subjects': return 'Subjects';
-            case 'messages': return activeConversationId ? users.find(u => u.id === activeConversationId)?.name || 'Messages' : 'Messages';
-            case 'bookstore': return 'Bookstore';
-            case 'examinations': return 'Examinations';
-            default: return 'Dashboard';
-        }
-    };
+    if (!currentUser) {
+        return <AuthScreen onLogin={handleLogin} onSignUp={handleSignUp} onGoogleAuth={handleGoogleAuth} onApply={() => setApplicationModalOpen(true)} />;
+    }
+
+    const headerTitle = selectedSubject ? selectedSubject.name : 
+                        activeLiveStream ? 'Live Class' :
+                        currentView.charAt(0).toUpperCase() + currentView.slice(1);
 
     return (
-        <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex flex-col">
-            <Header
-                user={currentUser}
-                onLogout={handleLogout}
-                title={getHeaderTitle()}
-                onBack={(selectedSubject || activeLiveStream || selectedLesson || currentView !== 'dashboard' || activeConversationId) ? handleBack : undefined}
-                onNavigateToSettings={() => setSettingsModalOpen(true)}
-                unreadCount={unreadNotifications}
-                onToggleNotifications={() => setNotificationsPanelOpen(prev => !prev)}
-            />
-            <main className="flex-grow">
-                {renderMainContent()}
+        <div className="min-h-screen bg-slate-100 dark:bg-slate-900">
+            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+            <div ref={searchRef} className="relative z-20">
+                <Header 
+                    user={currentUser} 
+                    onLogout={handleLogout} 
+                    title={headerTitle}
+                    onBack={selectedSubject || activeLiveStream || lastExamResult || selectedBookToRead ? handleBack : undefined}
+                    onNavigateToSettings={() => setSettingsModalOpen(true)}
+                    unreadCount={unreadNotifications}
+                    onToggleNotifications={() => setNotificationsPanelOpen(prev => !prev)}
+                    searchQuery={searchQuery}
+                    onSearchChange={setSearchQuery}
+                />
+                {searchResults && (
+                    <SearchResultsPanel
+                        results={searchResults}
+                        onSelectSubject={(subject) => {
+                            handleSelectSubject(subject);
+                            setSearchQuery('');
+                        }}
+                        onSelectLesson={(lesson) => {
+                            setSelectedLesson(lesson);
+                            setSearchQuery('');
+                        }}
+                        onSelectLiveClass={(lc) => {
+                            handleJoinLiveClass(lc);
+                            setSearchQuery('');
+                        }}
+                    />
+                )}
+            </div>
+            
+            <NotificationsPanel />
+
+            <main className="max-w-7xl mx-auto">
+                <MainContent />
             </main>
             
-            {(currentUser.role === Role.Student || currentUser.role === Role.Teacher) && (
-                 <BottomNavigationBar currentView={currentView} setCurrentView={setCurrentView} role={currentUser.role} />
-            )}
-            
-            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
             <PaymentModal 
                 isOpen={isPaymentModalOpen} 
-                onClose={() => { setPaymentModalOpen(false); if (pendingSignUp) setPendingSignUp(null); }} 
+                onClose={() => { setPaymentModalOpen(false); if(pendingSignUp) setPendingSignUp(null); }} 
                 onSelectPlan={handleSelectPlan}
                 isSignUpFlow={!!pendingSignUp}
             />
-             {pendingLiveClass && <LiveStreamTopUpModal isOpen={true} onClose={() => setPendingLiveClass(null)} onConfirm={handleLiveStreamTopUp} liveClass={pendingLiveClass} />}
-             <ConfirmationModal />
-             <SettingsModal />
-             <NotificationsPanel />
-             <BookReaderModal />
-             <UserDetailModal />
+            {pendingLiveClass && <LiveStreamTopUpModal isOpen={true} onClose={() => setPendingLiveClass(null)} onConfirm={handleLiveStreamTopUp} liveClass={pendingLiveClass}/>}
+            {selectedLesson && <VideoPlayerModal lesson={selectedLesson} subject={subjects.find(s=>s.id === selectedLesson.subjectId)!} onClose={handleCloseVideoPlayer} />}
+            <JobApplicationModal isOpen={isApplicationModalOpen} onClose={() => setApplicationModalOpen(false)} onSubmit={handleJobApplicationSubmit} />
+            <ConfirmationModal />
+            <BookReaderModal />
+            <SettingsModal />
+            <UserDetailModal />
         </div>
     );
 };
-
-const BottomNavigationBar: React.FC<{currentView: string, setCurrentView: (view: string) => void, role: Role}> = ({currentView, setCurrentView, role}) => {
-    const navItems = role === Role.Student ? [
-        { name: 'dashboard', label: 'Home', icon: HomeIcon },
-        { name: 'subjects', label: 'Subjects', icon: BookOpenIcon },
-        { name: 'messages', label: 'Messages', icon: ChatBubbleOvalLeftEllipsisIcon },
-        { name: 'more', label: 'More', icon: PlusIcon } // Placeholder for future items like bookstore, exams
-    ] : [
-        { name: 'dashboard', label: 'Dashboard', icon: HomeIcon },
-        { name: 'subjects', label: 'My Subjects', icon: BookOpenIcon },
-        { name: 'messages', label: 'Messages', icon: ChatBubbleOvalLeftEllipsisIcon },
-    ];
-    
-    // For student, 'more' could open a small menu
-    const handleNavigation = (view: string) => {
-        if(view === 'more' && role === Role.Student) {
-            // In a real app, this would open a sheet or modal with options
-            // For now, let's just cycle through other main views
-            setCurrentView('bookstore');
-        } else {
-             setCurrentView(view);
-        }
-    }
-    
-    return (
-        <div className="sticky bottom-0 left-0 right-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-700 z-20">
-            <div className="flex justify-around items-center h-16">
-                {navItems.map(item => (
-                    <button key={item.name} onClick={() => handleNavigation(item.name)} className={`flex flex-col items-center justify-center w-full transition-colors duration-200 ${currentView === item.name ? 'text-teal-600 dark:text-teal-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}>
-                        <item.icon className="w-6 h-6 mb-1"/>
-                        <span className="text-xs font-medium">{item.label}</span>
-                    </button>
-                ))}
-            </div>
-        </div>
-    )
-}
