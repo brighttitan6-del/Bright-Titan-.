@@ -130,6 +130,13 @@ export const ArrowLeftIcon = ({ className, title }: IconProps) => (
     </svg>
 );
 
+export const ArrowRightIcon = ({ className, title }: IconProps) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        {title && <title>{title}</title>}
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+    </svg>
+);
+
 export const WalletIcon = ({ className, title }: IconProps) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         {title && <title>{title}</title>}
@@ -480,5 +487,12 @@ export const ClipboardDocumentCheckIcon = ({ className, title }: IconProps) => (
         {title && <title>{title}</title>}
         <path strokeLinecap="round" strokeLinejoin="round" d="M10.125 2.25h-4.5c-1.125 0-2.25.9-2.25 2.25v13.5c0 1.125.9 2.25 2.25 2.25h9c1.125 0 2.25-.9 2.25-2.25v-9.75M10.125 2.25c.414 0 .828.125 1.209.354a4.5 4.5 0 015.386 5.386c.229.381.354.795.354 1.209v6.75M10.125 2.25a4.5 4.5 0 00-4.5 4.5v.375" />
         <path strokeLinecap="round" strokeLinejoin="round" d="M16.875 10.125l-3.75 3.75-1.5-1.5" />
+    </svg>
+);
+
+export const ArrowDownTrayIcon = ({ className, title }: IconProps) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        {title && <title>{title}</title>}
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
     </svg>
 );

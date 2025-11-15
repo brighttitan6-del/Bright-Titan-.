@@ -5,12 +5,6 @@ export enum Role {
   Owner = 'Owner',
 }
 
-export enum ApplicationStatus {
-    Pending = 'Pending',
-    Approved = 'Approved',
-    Rejected = 'Rejected',
-}
-
 export enum SubscriptionPlan {
   None = 'None',
   Daily = 'Daily',
@@ -26,19 +20,6 @@ export interface StudentSubscription {
   liveClassAccessId?: string; 
 }
 
-
-export interface JobApplication {
-    id: string;
-    name: string;
-    email: string;
-    phoneNumber: string;
-    subjects: string[]; // e.g., ["Mathematics", "Physics"]
-    status: ApplicationStatus;
-    timestamp: Date;
-    cvFileName?: string;
-    cvDataUrl?: string;
-}
-
 export interface User {
   id: string;
   name: string;
@@ -47,6 +28,11 @@ export interface User {
   profilePicture?: string;
   password?: string;
   subscription?: StudentSubscription;
+  teacherApplication?: {
+    cvUrl: string;
+    message: string;
+    status: 'Pending' | 'Approved' | 'Rejected';
+  };
 }
 
 export interface Teacher extends User {
@@ -143,7 +129,6 @@ export enum ActivityType {
   NewQuizCreated = 'New Quiz Created',
   NewBookPurchase = 'New Book Purchase',
   LiveClassStarted = 'Live Class Started',
-  NewApplication = 'New Job Application',
   NewBookReading = 'Book Opened',
   NewExamination = 'New Examination',
   ExaminationSubmission = 'Examination Submission',
@@ -151,6 +136,7 @@ export enum ActivityType {
   NewPostComment = 'New Comment on Post',
   NewEnrollmentInClass = 'New Enrollment in Class',
   NewCommentOnPostTeacher = 'New Comment on Your Post',
+  TeacherApplication = 'New Teacher Application',
 }
 
 export interface ActivityLog {

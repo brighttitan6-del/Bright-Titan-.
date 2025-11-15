@@ -1,4 +1,4 @@
-import { Role, User, Subject, VideoLesson, LiveClass, PaymentRecord, Quiz, QuizAttempt, Enrollment, LessonCompletion, ActivityLog, ActivityType, Book, SubjectPost, PostType, JobApplication, ApplicationStatus, DirectMessage, ExaminationQuestion, Examination, ExaminationAttempt, SubscriptionPlan, BookPurchase, Withdrawal, LessonBookmark, BookReading, PostComment } from './types';
+import { Role, User, Subject, VideoLesson, LiveClass, PaymentRecord, Quiz, QuizAttempt, Enrollment, LessonCompletion, ActivityLog, ActivityType, Book, SubjectPost, PostType, DirectMessage, ExaminationQuestion, Examination, ExaminationAttempt, SubscriptionPlan, BookPurchase, Withdrawal, LessonBookmark, BookReading, PostComment } from './types';
 
 export const USERS: User[] = [
   // Student with an expired weekly plan
@@ -15,7 +15,19 @@ export const USERS: User[] = [
       endDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // Expired 3 days ago
     }
   },
-  { id: 'user-2', name: 'Emily Carter', email: 'emily@example.com', role: Role.Teacher, profilePicture: 'https://i.pravatar.cc/150?u=user-2', password: 'teacherpassword' },
+  { 
+    id: 'user-2', 
+    name: 'Emily Carter', 
+    email: 'emily@example.com', 
+    role: Role.Teacher, 
+    profilePicture: 'https://i.pravatar.cc/150?u=user-2', 
+    password: 'teacherpassword',
+    teacherApplication: {
+      cvUrl: '/path/to/emily_carter_cv.pdf',
+      message: 'I am an experienced English teacher with a passion for literature and helping students find their voice.',
+      status: 'Approved',
+    }
+  },
   // Student with no payment history
   { id: 'user-3', name: 'Bob Johnson', email: 'bob@example.com', role: Role.Student, profilePicture: 'https://i.pravatar.cc/150?u=user-3', password: 'password123', subscription: { plan: SubscriptionPlan.None, startDate: new Date(), endDate: new Date() } },
   // Student with an expired daily plan to test 24-hour lockout
@@ -47,7 +59,19 @@ export const USERS: User[] = [
     }
   },
   { id: 'user-7', name: 'Bright Nason (Owner)', email: 'brightnason19@gmail.com', role: Role.Owner, profilePicture: 'https://i.pravatar.cc/150?u=user-7', password: 'grax2650' },
-  { id: 'user-8', name: 'Bright Nason (Teacher)', email: 'brightnason19@gmail.com', role: Role.Teacher, profilePicture: 'https://i.pravatar.cc/150?u=user-8', password: 'grax2650' },
+  { 
+    id: 'user-8', 
+    name: 'Bright Nason (Teacher)', 
+    email: 'brightnason19@gmail.com', 
+    role: Role.Teacher, 
+    profilePicture: 'https://i.pravatar.cc/150?u=user-8', 
+    password: 'grax2650',
+    teacherApplication: {
+      cvUrl: '/path/to/bn_cv.pdf',
+      message: 'Experienced Maths and Chemistry teacher looking to make a difference.',
+      status: 'Approved',
+    }
+  },
   // Student with an expired daily plan to verify 24-hour access lock
   { 
     id: 'user-9', 
@@ -61,6 +85,19 @@ export const USERS: User[] = [
       startDate: new Date(Date.now() - 26 * 60 * 60 * 1000), // Paid 26 hours ago
       endDate: new Date(Date.now() - 2 * 60 * 60 * 1000),   // Expired 2 hours ago
     }
+  },
+  {
+    id: 'user-10',
+    name: 'Frank Green',
+    email: 'frank@example.com',
+    role: Role.Teacher,
+    profilePicture: 'https://i.pravatar.cc/150?u=user-10',
+    password: 'password123',
+    teacherApplication: {
+      cvUrl: '/path/to/frank_green_cv.pdf',
+      message: 'I am a certified Biology teacher with 5 years of experience and I am excited about the opportunity to contribute to the SmartLearn platform.',
+      status: 'Pending',
+    },
   },
 ];
 
@@ -158,6 +195,8 @@ export const ACTIVITY_LOGS: ActivityLog[] = [
   { id: 'log-8', userId: 'user-8', type: ActivityType.NewDirectMessage, text: 'You have a new message from Alice Smith.', timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000), read: false },
   { id: 'log-9', userId: 'user-8', type: ActivityType.NewCommentOnPostTeacher, text: 'Bright Nason commented on your post "Quiz on Friday will cover..."', timestamp: new Date(Date.now() - 20 * 60 * 60 * 1000), read: false },
   { id: 'log-10', userId: 'user-2', type: ActivityType.NewEnrollmentInClass, text: 'Alice Smith has enrolled in your English class.', timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), read: false },
+  { id: 'log-11', userId: 'user-7', type: ActivityType.TeacherApplication, text: 'Frank Green has applied to be a teacher.', timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000), read: false },
+
 ];
 
 export const BOOKS: Book[] = [
@@ -183,10 +222,6 @@ export const SUBJECT_POSTS: SubjectPost[] = [
 
 export const POST_COMMENTS: PostComment[] = [
     { id: 'comment-1', postId: 'post-2', authorId: 'user-6', authorName: 'Bright Nason', authorProfilePic: 'https://i.pravatar.cc/150?u=user-6', text: 'I do have a question about quadratic equations. Can we review that?', timestamp: new Date(Date.now() - 20 * 60 * 60 * 1000) }
-];
-
-export const INITIAL_JOB_APPLICATIONS: JobApplication[] = [
-    { id: 'app-1', name: 'John Doe', email: 'johndoe@example.com', phoneNumber: '0991234567', subjects: ['Physics', 'Chemistry'], status: ApplicationStatus.Pending, timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) },
 ];
 
 export const INITIAL_DIRECT_MESSAGES: DirectMessage[] = [
@@ -239,4 +274,28 @@ export const WITHDRAWALS: Withdrawal[] = [
   { id: 'wd-1', amount: 15000, method: 'Airtel Money', phoneNumber: '0991234567', timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) },
   { id: 'wd-2', amount: 25000, method: 'TNM Mpamba', phoneNumber: '0888765432', timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) },
   { id: 'wd-3', amount: 8000, method: 'Airtel Money', phoneNumber: '0999876543', timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) },
+];
+
+export const PLANS = [
+  {
+    plan: SubscriptionPlan.Daily,
+    name: 'Daily Pass',
+    price: 2000,
+    durationDays: 1,
+    description: '24 hours of full access.'
+  },
+  {
+    plan: SubscriptionPlan.Weekly,
+    name: 'Weekly Pass',
+    price: 10000,
+    durationDays: 7,
+    description: 'Full access for a week.'
+  },
+  {
+    plan: SubscriptionPlan.Monthly,
+    name: 'Monthly Pass',
+    price: 35000,
+    durationDays: 30,
+    description: 'Best value for a full month.'
+  }
 ];

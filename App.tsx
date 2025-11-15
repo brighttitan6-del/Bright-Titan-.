@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Role, Subject, VideoLesson, LiveClass, ChatMessage, PaymentRecord, QuizAttempt, Enrollment, LessonCompletion, ActivityType, ActivityLog, Book, SubjectPost, PostType, JobApplication, ApplicationStatus, BookPurchase, ToastMessage, Withdrawal, DirectMessage, Examination, ExaminationAttempt, ExaminationQuestion, Quiz, SubscriptionPlan, StudentSubscription, LessonBookmark, BookReading, PostComment } from './types';
-import { USERS, SUBJECTS, VIDEO_LESSONS, INITIAL_LIVE_CLASSES, PAYMENT_HISTORY, QUIZZES, QUIZ_ATTEMPTS, ENROLLMENTS, LESSON_COMPLETIONS, ACTIVITY_LOGS, BOOKS, SUBJECT_POSTS, INITIAL_JOB_APPLICATIONS, INITIAL_DIRECT_MESSAGES, EXAMINATIONS, EXAMINATION_ATTEMPTS, BOOK_PURCHASES, WITHDRAWALS, BOOKMARKS, BOOK_READINGS, POST_COMMENTS } from './constants';
-import { runAiTutor, generateQuizOptions } from './services/geminiService';
-// FIX: Added InformationCircleIcon to the import to fix a missing component error.
-import { UserCircleIcon, BellIcon, ArrowLeftIcon, SearchIcon, VideoCameraIcon, ClockIcon, SendIcon, SparklesIcon, WalletIcon, CheckCircleIcon, CheckBadgeIcon, AirtelMoneyIcon, TnmMpambaIcon, NationalBankIcon, StarIcon, UserGroupIcon, ChartBarIcon, PencilIcon, PlusIcon, ExclamationTriangleIcon, CloseIcon, LockClosedIcon, Cog6ToothIcon, CameraIcon, BookOpenIcon, DocumentCheckIcon, CloudArrowUpIcon, TrashIcon, RssIcon, XCircleIcon, ComputerDesktopIcon, MicrophoneIcon, VideoCameraSlashIcon, ChevronUpIcon, WifiIcon, EyeIcon, BuildingStorefrontIcon, LightBulbIcon, QuestionMarkCircleIcon, ChatBubbleLeftRightIcon, PlayIcon, PauseIcon, SpeakerWaveIcon, SpeakerXMarkIcon, ArrowsPointingOutIcon, ArrowsPointingInIcon, GoogleIcon, EnvelopeIcon, UserIcon, PhoneIcon, DocumentTextIcon, HomeIcon, AcademicCapIcon, ShoppingCartIcon, SmartLearnLogo, BriefcaseIcon, ShieldCheckIcon, CurrencyDollarIcon, UsersIcon, BanknotesIcon, CalendarDaysIcon, TrophyIcon, ClipboardDocumentCheckIcon, BookmarkIcon, InformationCircleIcon, ChatBubbleOvalLeftEllipsisIcon } from './components/icons';
-import { Button, Modal, ToastContainer, PaymentModal } from './components/common';
+import { User, Role, Subject, VideoLesson, LiveClass, ChatMessage, PaymentRecord, QuizAttempt, Enrollment, LessonCompletion, ActivityType, ActivityLog, Book, SubjectPost, PostType, BookPurchase, ToastMessage, Withdrawal, DirectMessage, Examination, ExaminationAttempt, ExaminationQuestion, Quiz, SubscriptionPlan, StudentSubscription, LessonBookmark, BookReading, PostComment } from './types';
+import { USERS, SUBJECTS, VIDEO_LESSONS, INITIAL_LIVE_CLASSES, PAYMENT_HISTORY, QUIZZES, QUIZ_ATTEMPTS, ENROLLMENTS, LESSON_COMPLETIONS, ACTIVITY_LOGS, BOOKS, SUBJECT_POSTS, INITIAL_DIRECT_MESSAGES, EXAMINATIONS, EXAMINATION_ATTEMPTS, BOOK_PURCHASES, WITHDRAWALS, BOOKMARKS, BOOK_READINGS, POST_COMMENTS, PLANS } from './constants';
+import { runAiTutor, generateQuizOptions, getMotivationalQuote, getRecommendedLessons } from './services/geminiService';
+import { UserCircleIcon, BellIcon, ArrowLeftIcon, SearchIcon, VideoCameraIcon, ClockIcon, SendIcon, SparklesIcon, WalletIcon, CheckCircleIcon, CheckBadgeIcon, AirtelMoneyIcon, TnmMpambaIcon, NationalBankIcon, StarIcon, UserGroupIcon, ChartBarIcon, PencilIcon, PlusIcon, ExclamationTriangleIcon, CloseIcon, LockClosedIcon, Cog6ToothIcon, CameraIcon, BookOpenIcon, CloudArrowUpIcon, TrashIcon, RssIcon, XCircleIcon, ComputerDesktopIcon, MicrophoneIcon, VideoCameraSlashIcon, ChevronUpIcon, WifiIcon, EyeIcon, BuildingStorefrontIcon, LightBulbIcon, QuestionMarkCircleIcon, ChatBubbleLeftRightIcon, PlayIcon, PauseIcon, SpeakerWaveIcon, SpeakerXMarkIcon, ArrowsPointingOutIcon, ArrowsPointingInIcon, GoogleIcon, EnvelopeIcon, UserIcon, HomeIcon, AcademicCapIcon, ShoppingCartIcon, SmartLearnLogo, BriefcaseIcon, ShieldCheckIcon, CurrencyDollarIcon, UsersIcon, BanknotesIcon, CalendarDaysIcon, TrophyIcon, ClipboardDocumentCheckIcon, BookmarkIcon, InformationCircleIcon, ChatBubbleOvalLeftEllipsisIcon, DocumentTextIcon, ArrowDownTrayIcon, ArrowRightIcon } from './components/icons';
+import { Button, Modal, ToastContainer } from './components/common';
 
-const APP_OWNER_ID = 'user-7'; // Mr. Nyalugwe's ID
+const APP_OWNER_ID = 'user-7';
 
 // ----- Helper Functions -----
 type SubscriptionStatus = 'Active' | 'Expired' | 'None';
@@ -14,9 +13,6 @@ const getSubscriptionStatus = (user: User | null): { status: SubscriptionStatus;
     if (!user || user.role === Role.Teacher || user.role === Role.Owner || !user.subscription || user.subscription.plan === SubscriptionPlan.None) {
         return { status: 'None', plan: SubscriptionPlan.None };
     }
-    // This is the core access control logic. It checks if the current time
-    // has passed the subscription's pre-calculated end date.
-    // This works for all plans (Daily, Weekly, Monthly) as the endDate is set correctly upon purchase.
     if (user.subscription.endDate.getTime() < Date.now()) {
         return { status: 'Expired', plan: user.subscription.plan };
     }
@@ -43,15 +39,17 @@ const InputWithIcon: React.FC<{ icon: React.ReactNode, type: string, placeholder
 
 const AuthScreen: React.FC<{
     onLogin: (email: string, pass: string, role: Role) => void;
-    onSignUp: (name: string, email: string, pass: string, role: Role) => void;
-    onGoogleAuth: () => void;
-    onApply: () => void;
-}> = ({ onLogin, onSignUp, onGoogleAuth, onApply }) => {
+    onSignUp: (name: string, email: string, pass: string, role: Role, cvFile: File | null, message: string) => void;
+    onGoogleAuth: (role: Role) => void;
+    onShowAbout: () => void;
+}> = ({ onLogin, onSignUp, onGoogleAuth, onShowAbout }) => {
     const [authRole, setAuthRole] = useState<Role | null>(null);
     const [mode, setMode] = useState<'login' | 'signup'>('login');
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [cvFile, setCvFile] = useState<File | null>(null);
+    const [coverMessage, setCoverMessage] = useState('');
 
     const handleLoginSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -60,7 +58,7 @@ const AuthScreen: React.FC<{
 
     const handleSignUpSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (authRole) onSignUp(name, email, password, authRole);
+        if (authRole) onSignUp(name, email, password, authRole, cvFile, coverMessage);
     };
     
     const RoleCard: React.FC<{icon: React.ReactNode, title: Role, description: string, onClick: () => void, gradient: string}> = ({ icon, title, description, onClick, gradient }) => (
@@ -75,7 +73,7 @@ const AuthScreen: React.FC<{
         if (!authRole) return null;
         
         const isManager = authRole === Role.Owner;
-        const isTeacher = authRole === Role.Teacher;
+        const isTeacherSignup = authRole === Role.Teacher && mode === 'signup';
 
         return (
             <div className="w-full max-w-sm">
@@ -101,35 +99,32 @@ const AuthScreen: React.FC<{
                             <Button type="submit" className="w-full">Sign In</Button>
                         </form>
                     ) : ( // Signup form
-                        isTeacher ? (
-                           <div className="text-center space-y-4">
-                               <p className="text-slate-600">Teacher accounts are created after a successful application.</p>
-                               <p className="text-sm text-slate-500">Please use the "Apply for a Teaching Job" link on the previous screen to submit an application.</p>
-                               <Button variant="secondary" onClick={() => setAuthRole(null)} className="w-full mt-2">Back to Roles</Button>
-                           </div>
-                        ) : (
-                             <form onSubmit={handleSignUpSubmit} className="space-y-4">
-                                <InputWithIcon icon={<UserIcon className="w-5 h-5 text-slate-400" />} type="text" placeholder="Full Name" value={name} onChange={e => setName(e.target.value)} />
-                                <InputWithIcon icon={<EnvelopeIcon className="w-5 h-5 text-slate-400" />} type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
-                                <InputWithIcon icon={<LockClosedIcon className="w-5 h-5 text-slate-400" />} type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
-                                <Button type="submit" className="w-full">Create Account</Button>
-                            </form>
-                        )
+                         <form onSubmit={handleSignUpSubmit} className="space-y-4">
+                            <InputWithIcon icon={<UserIcon className="w-5 h-5 text-slate-400" />} type="text" placeholder="Full Name" value={name} onChange={e => setName(e.target.value)} />
+                            <InputWithIcon icon={<EnvelopeIcon className="w-5 h-5 text-slate-400" />} type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
+                            <InputWithIcon icon={<LockClosedIcon className="w-5 h-5 text-slate-400" />} type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
+                            {isTeacherSignup && (
+                                <>
+                                    <textarea value={coverMessage} onChange={(e) => setCoverMessage(e.target.value)} placeholder="Short message about your teaching experience..." className="w-full px-4 py-3 rounded-2xl border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500" rows={3}></textarea>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Upload CV (PDF)</label>
+                                        <input type="file" accept=".pdf" onChange={(e) => setCvFile(e.target.files ? e.target.files[0] : null)} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100" />
+                                    </div>
+                                </>
+                            )}
+                            <Button type="submit" className="w-full">Create Account</Button>
+                        </form>
                     )}
                     
-                    {!isManager && (
-                         <div className="relative flex py-5 items-center">
-                            <div className="flex-grow border-t border-slate-200"></div>
-                            <span className="flex-shrink mx-4 text-slate-400 text-sm">OR</span>
-                            <div className="flex-grow border-t border-slate-200"></div>
-                        </div>
-                    )}
+                    <div className="relative flex py-5 items-center">
+                        <div className="flex-grow border-t border-slate-200"></div>
+                        <span className="flex-shrink mx-4 text-slate-400 text-sm">OR</span>
+                        <div className="flex-grow border-t border-slate-200"></div>
+                    </div>
                     
-                    {!isManager && (
-                        <Button onClick={onGoogleAuth} variant="secondary" className="w-full flex items-center justify-center gap-2">
-                           <GoogleIcon className="w-5 h-5" /> Sign in with Google
-                        </Button>
-                    )}
+                    <Button onClick={() => onGoogleAuth(authRole)} variant="secondary" className="w-full flex items-center justify-center gap-2">
+                       <GoogleIcon className="w-5 h-5" /> Sign in with Google
+                    </Button>
                 </div>
             </div>
         );
@@ -147,12 +142,10 @@ const AuthScreen: React.FC<{
                         <RoleCard icon={<BriefcaseIcon className="w-12 h-12 text-white"/>} title={Role.Teacher} description="Manage your content and engage with students." onClick={() => {setAuthRole(Role.Teacher); setMode('login')}} gradient="bg-gradient-to-br from-emerald-500 to-green-600" />
                         <RoleCard icon={<ShieldCheckIcon className="w-12 h-12 text-white"/>} title={Role.Owner} description="Oversee the entire platform and its users." onClick={() => setAuthRole(Role.Owner)} gradient="bg-gradient-to-br from-slate-600 to-gray-700" />
                     </div>
-                    <div className="mt-10 pt-6 border-t border-teal-100/20">
-                        <h3 className="text-xl font-semibold text-white">Join Our Team</h3>
-                        <p className="text-teal-100 mt-2 mb-4">Are you a passionate educator? We're looking for talented teachers to join our platform.</p>
-                        <Button onClick={onApply} className="bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:from-orange-600 hover:to-amber-600 focus:ring-orange-300 shadow-lg">
-                            Apply for a Teaching Job
-                        </Button>
+                     <div className="text-center mt-8">
+                        <button onClick={onShowAbout} className="text-teal-100 hover:text-white underline transition-colors">
+                            About SmartLearn
+                        </button>
                     </div>
                 </div>
             )}
@@ -172,1823 +165,214 @@ const StatCard: React.FC<{ icon: React.ReactElement<{ className?: string }>; tit
     </div>
 );
 
-
-interface HeaderProps {
-  user: User;
-  onLogout: () => void;
-  title: string;
-  onBack?: () => void;
-  onNavigateToSettings: () => void;
-  unreadCount: number;
-  onToggleNotifications: () => void;
-  searchQuery: string;
-  onSearchChange: (query: string) => void;
-}
-const Header: React.FC<HeaderProps> = ({ user, onLogout, title, onBack, onNavigateToSettings, unreadCount, onToggleNotifications, searchQuery, onSearchChange }) => {
-  return (
-    <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-sm p-4 sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 dark:border-slate-700">
-      <div className="flex items-center gap-4 flex-1">
-        {onBack ? (
-          <button onClick={onBack} className="text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400" aria-label="Go back">
-            <ArrowLeftIcon className="w-6 h-6" />
-          </button>
-        ) : (
-            <SmartLearnLogo className="w-8 h-8" />
-        )}
-         <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 hidden sm:block">{title}</h1>
-      </div>
-      <div className="flex items-center gap-4">
-        <div className="relative flex-grow max-w-xs md:max-w-sm">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
-            <input
-                type="text"
-                placeholder="Search subjects, lessons..."
-                value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
-                className="w-full pl-10 pr-9 py-2 rounded-full border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-            {searchQuery && (
-                <button onClick={() => onSearchChange('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                    <XCircleIcon className="w-5 h-5" />
-                </button>
-            )}
-        </div>
-        <button onClick={onToggleNotifications} className="text-slate-500 dark:text-slate-400 relative" aria-label="View notifications">
-            <BellIcon className="w-6 h-6" />
-            {unreadCount > 0 && <span className="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900"></span>}
-        </button>
-         <button onClick={onNavigateToSettings} className="text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400" aria-label="Open settings">
-            <Cog6ToothIcon className="w-6 h-6" />
-        </button>
-        <div className="flex items-center gap-2">
-            {user.profilePicture ? (
-                <img src={user.profilePicture} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
-            ) : (
-                <UserCircleIcon className="w-8 h-8 text-slate-400" />
-            )}
-        </div>
-      </div>
-    </header>
-  );
-};
-
-const SubjectCard: React.FC<{ subject: Subject; onClick: () => void; progress: number; isLocked: boolean; isLive: boolean; }> = ({ subject, onClick, progress, isLocked, isLive }) => (
-    <div onClick={onClick} className="bg-white dark:bg-slate-800 rounded-xl shadow-md overflow-hidden cursor-pointer transition-transform hover:scale-105 duration-300 flex flex-col relative">
-        {isLive && (
-            <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 z-10 animate-fade-in-up">
-                <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-                </span>
-                LIVE
-            </div>
-        )}
-        <img className={`h-32 w-full object-cover ${isLocked ? 'grayscale' : ''}`} src={subject.coverPhoto} alt={subject.name} />
-        <div className={`p-4 flex flex-col flex-grow`}>
-            <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">{subject.name}</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400">{subject.teacherName}</p>
-            <div className="mt-auto pt-3">
-                <div className="flex justify-between items-center mb-1">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Progress</span>
-                    <span className="text-xs font-bold text-teal-600 dark:text-teal-400">{isLocked ? 0 : progress}%</span>
-                </div>
-                <div className="bg-slate-200 dark:bg-slate-700 rounded-full h-2">
-                    <div className="bg-teal-500 h-2 rounded-full" style={{ width: `${isLocked ? 0 : progress}%` }}></div>
-                </div>
-            </div>
-        </div>
-        {isLocked && (
-            <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center rounded-xl">
-                <LockClosedIcon className="w-10 h-10 text-white" />
-            </div>
-        )}
-    </div>
-);
-
-const PaymentPrompt: React.FC<{ onPay: () => void, status: SubscriptionStatus, plan: SubscriptionPlan }> = ({ onPay, status, plan }) => {
-    let title = "Access Restricted";
-    let message = "Please select a plan to unlock all subjects, videos, and live classes.";
-    let buttonText = "Pay Now";
-
-    if (status === 'Expired') {
-        title = `Access Expired`;
-        message = `Your ${plan.toLowerCase()} access has expired. Please pay again to continue learning.`;
-        buttonText = "Renew Payment";
-    }
-
-    return (
-        <div className="bg-yellow-100 dark:bg-yellow-900/50 border-l-4 border-yellow-500 dark:border-yellow-400 text-yellow-800 dark:text-yellow-200 p-4 rounded-r-lg shadow-md mb-6" role="alert">
-            <h3 className="font-bold text-lg">{title}</h3>
-            <p className="text-sm mb-3">{message}</p>
-            <Button onClick={onPay} className="!bg-yellow-500 !text-white !py-2 !px-4 text-sm hover:!bg-yellow-600 focus:!ring-yellow-300">
-                {buttonText}
-            </Button>
-        </div>
-    );
-};
-
-const StudentDashboard: React.FC<{ 
-    user: User;
-    subscriptionStatus: SubscriptionStatus;
-    subscriptionPlan: SubscriptionPlan;
-    allSubjects: Subject[];
-    allLessons: VideoLesson[];
-    allLiveClasses: LiveClass[];
-    bookmarks: LessonBookmark[];
-    activeLiveClass: LiveClass | null;
-    onJoinLiveClass: (liveClass: LiveClass) => void;
-    onPayForLessons: () => void;
-    onWatchLesson: (lesson: VideoLesson) => void;
-    onNavigate: (view: string) => void;
-}> = ({ user, subscriptionStatus, subscriptionPlan, allSubjects, allLessons, allLiveClasses, bookmarks, activeLiveClass, onJoinLiveClass, onPayForLessons, onWatchLesson, onNavigate }) => {
-    const recentLessons = allLessons.slice(0, 4);
-    const hasActiveSubscription = subscriptionStatus === 'Active';
-    const userBookmarks = bookmarks.filter(b => b.studentId === user.id);
-
-    return (
-        <div className="p-4 space-y-6 animate-fade-in-up">
-            {activeLiveClass && hasActiveSubscription && (
-                <div 
-                    onClick={() => onJoinLiveClass(activeLiveClass)}
-                    className="bg-gradient-to-r from-red-500 to-orange-500 text-white p-4 rounded-xl shadow-lg flex items-center justify-between hover-lift cursor-pointer animate-fade-in-up mb-6"
-                >
-                    <div className="flex items-center gap-3">
-                        <div className="relative flex h-3 w-3">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
-                        </div>
-                        <div>
-                            <h3 className="font-bold">LIVE NOW: {activeLiveClass.title}</h3>
-                            <p className="text-sm text-red-100">{activeLiveClass.teacherName} is live for {allSubjects.find(s => s.id === activeLiveClass.subjectId)?.name}</p>
-                        </div>
-                    </div>
-                    <Button className="py-2 px-4 text-sm !bg-white !text-red-600 hover:!bg-red-50 focus:!ring-red-200">Join Now</Button>
-                </div>
-            )}
-            
-            {!hasActiveSubscription && <PaymentPrompt onPay={onPayForLessons} status={subscriptionStatus} plan={subscriptionPlan} />}
-
-            {userBookmarks.length > 0 && (
-                <div>
-                     <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Bookmarked Lessons</h2>
-                     <div className="space-y-3">
-                        {userBookmarks.map(bookmark => {
-                            const lesson = allLessons.find(l => l.id === bookmark.lessonId);
-                            const subject = lesson ? allSubjects.find(s => s.id === lesson.subjectId) : null;
-                            if (!lesson || !subject) return null;
-
-                            return (
-                                <div key={bookmark.lessonId} className={`bg-white dark:bg-slate-800 p-3 rounded-lg flex items-center gap-4 shadow-sm hover-lift transition-all ${!hasActiveSubscription ? 'opacity-70' : ''}`}>
-                                    <img src={lesson.thumbnail} alt={lesson.title} className={`w-20 h-12 object-cover rounded-md ${!hasActiveSubscription ? 'grayscale' : ''}`} />
-                                    <div className="flex-grow">
-                                        <h3 className="font-semibold text-slate-800 dark:text-slate-100">{lesson.title}</h3>
-                                        <p className="text-sm text-slate-500 dark:text-slate-400">{subject.name}</p>
-                                    </div>
-                                    {hasActiveSubscription ? (
-                                         <Button onClick={() => onWatchLesson(lesson)} className="!py-2 !px-4 text-sm">Watch Now</Button>
-                                    ) : (
-                                         <Button onClick={onPayForLessons} className="!py-2 !px-4 text-sm !bg-yellow-500 !text-white hover:!bg-yellow-600 focus:!ring-yellow-300">Renew to Watch</Button>
-                                    )}
-                                </div>
-                            )
-                        })}
-                     </div>
-                </div>
-            )}
-
-            {hasActiveSubscription ? (
-                <>
-                    <div>
-                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Continue Watching</h2>
-                        <div className="flex overflow-x-auto gap-4 pb-4 -mx-4 px-4">
-                            {recentLessons.map((lesson, index) => {
-                                const subject = allSubjects.find(s => s.id === lesson.subjectId);
-                                const progress = (60 + (index * 10)) % 100;
-                                return (
-                                     <div key={lesson.id} onClick={() => onWatchLesson(lesson)} className="bg-white dark:bg-slate-800 rounded-xl shadow-md overflow-hidden cursor-pointer w-48 flex-shrink-0 transition-transform hover:scale-105 duration-300">
-                                        <img className="h-24 w-full object-cover" src={lesson.thumbnail} alt={lesson.title} />
-                                        <div className="p-3">
-                                            <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 truncate">{lesson.title}</h3>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">{subject?.name}</p>
-                                            <div className="bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
-                                                <div className="bg-teal-500 h-1.5 rounded-full" style={{width: `${progress}%`}}></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    <div>
-                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Upcoming Live Classes</h2>
-                        <div className="space-y-3">
-                            {allLiveClasses.filter(lc => lc.startTime > new Date()).map(lc => (
-                                <div key={lc.id} className="bg-gradient-to-r from-teal-600 to-cyan-500 text-white p-4 rounded-xl shadow-lg flex items-center justify-between hover-lift">
-                                    <div className="flex items-center gap-3">
-                                        <div className="bg-white/20 p-2 rounded-full"><RssIcon className="w-5 h-5"/></div>
-                                        <div>
-                                            <h3 className="font-bold">{lc.title}</h3>
-                                            <p className="text-sm text-teal-200">{lc.teacherName} - {lc.startTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
-                                        </div>
-                                    </div>
-                                    <Button onClick={() => onJoinLiveClass(lc)} className="py-2 px-4 text-sm !bg-white !text-teal-600 hover:!bg-teal-50 focus:!ring-teal-200">Join</Button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </>
-            ) : null }
-
-            <div className="mt-6">
-                <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">More Resources</h2>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div
-                        onClick={() => onNavigate('bookstore')}
-                        className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-md flex items-center gap-4 cursor-pointer hover-lift"
-                    >
-                        <div className="bg-orange-100 dark:bg-orange-500/20 p-3 rounded-full">
-                            <BuildingStorefrontIcon className="w-8 h-8 text-orange-500" />
-                        </div>
-                        <div>
-                            <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">Bookstore</h3>
-                            <p className="text-slate-500 dark:text-slate-400">Browse and purchase textbooks.</p>
-                        </div>
-                    </div>
-                     <div
-                        onClick={() => onNavigate('examinations')}
-                        className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-md flex items-center gap-4 cursor-pointer hover-lift"
-                    >
-                        <div className="bg-indigo-100 dark:bg-indigo-500/20 p-3 rounded-full">
-                            <TrophyIcon className="w-8 h-8 text-indigo-500" />
-                        </div>
-                        <div>
-                            <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">Examinations</h3>
-                            <p className="text-slate-500 dark:text-slate-400">Test your knowledge.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const ActivityFeed: React.FC<{ logs: ActivityLog[], title?: string }> = ({ logs, title = "Recent Activity" }) => {
-    const getLogIcon = (type: ActivityType) => {
-        const iconClass = "w-5 h-5";
-        switch (type) {
-            case ActivityType.NewEnrollment:
-            case ActivityType.NewEnrollmentInClass:
-                return <UserGroupIcon className={`${iconClass} text-teal-500`} />;
-            case ActivityType.QuizSubmission: return <CheckCircleIcon className={`${iconClass} text-green-500`} />;
-            case ActivityType.NewLesson: return <VideoCameraIcon className={`${iconClass} text-purple-500`} />;
-            case ActivityType.LiveClassStarted:
-            case ActivityType.LiveReminder: return <RssIcon className={`${iconClass} text-red-500`} />;
-            case ActivityType.PaymentReceived: return <WalletIcon className={`${iconClass} text-indigo-500`} />;
-            case ActivityType.NewApplication: return <BriefcaseIcon className={`${iconClass} text-blue-500`} />;
-            case ActivityType.NewBookPurchase: return <ShoppingCartIcon className={`${iconClass} text-orange-500`} />;
-            case ActivityType.NewBookReading: return <BookOpenIcon className={`${iconClass} text-cyan-500`} />;
-            case ActivityType.NewExamination: return <TrophyIcon className={`${iconClass} text-indigo-500`} />;
-            case ActivityType.ExaminationSubmission: return <ClipboardDocumentCheckIcon className={`${iconClass} text-green-500`} />;
-            case ActivityType.NewDirectMessage: return <EnvelopeIcon className={`${iconClass} text-blue-500`} />;
-            case ActivityType.NewPostComment:
-            case ActivityType.NewCommentOnPostTeacher:
-                 return <ChatBubbleLeftRightIcon className={`${iconClass} text-yellow-500`} />;
-            default: return null;
-        }
-    };
-
-    return (
-        <div>
-            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">{title}</h2>
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm space-y-3 max-h-60 overflow-y-auto">
-                {logs.length > 0 ? logs.sort((a,b) => b.timestamp.getTime() - a.timestamp.getTime()).map(log => (
-                     <div key={log.id} className="flex items-start gap-3">
-                        <div className="bg-slate-100 dark:bg-slate-700 p-2 rounded-full mt-1">
-                            {getLogIcon(log.type)}
-                        </div>
-                        <div>
-                            <p className="text-sm text-slate-700 dark:text-slate-200">{log.text}</p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">{new Date(log.timestamp).toLocaleString()}</p>
-                        </div>
-                     </div>
-                )) : (
-                    <p className="text-center text-slate-500 dark:text-slate-400 py-4">No recent activity.</p>
-                )}
-            </div>
-        </div>
-    );
-};
-
-// ----- New Components for different views -----
-
-const UploadLessonModal: React.FC<{
-    isOpen: boolean;
-    onClose: () => void;
-    onSubmit: (data: Omit<VideoLesson, 'id' | 'thumbnail'>) => void;
-    teacherSubjects: Subject[];
-}> = ({ isOpen, onClose, onSubmit, teacherSubjects }) => {
-    const [subjectId, setSubjectId] = useState(teacherSubjects[0]?.id || '');
-    const [title, setTitle] = useState('');
-    const [description, setDescription] = useState('');
-    const [duration, setDuration] = useState('');
-    const [difficulty, setDifficulty] = useState<'Beginner' | 'Intermediate' | 'Advanced'>('Beginner');
-    const [error, setError] = useState('');
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!subjectId || !title || !description || !duration) {
-            setError('Please fill all required fields.');
-            return;
-        }
-        onSubmit({ subjectId, title, description, duration, difficulty });
-    };
-
-    return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Upload New Video Lesson">
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                    <label htmlFor="subject" className="block text-sm font-medium text-slate-700 dark:text-slate-300">Subject</label>
-                    <select id="subject" value={subjectId} onChange={e => setSubjectId(e.target.value)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm rounded-md">
-                        {teacherSubjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    </select>
-                </div>
-                <InputWithIcon icon={<PencilIcon className="w-5 h-5 text-slate-400" />} type="text" placeholder="Lesson Title" value={title} onChange={e => setTitle(e.target.value)} required />
-                <div>
-                     <label htmlFor="description" className="block text-sm font-medium text-slate-700 dark:text-slate-300">Description</label>
-                    <textarea id="description" value={description} onChange={e => setDescription(e.target.value)} rows={3} className="mt-1 shadow-sm focus:ring-teal-500 focus:border-teal-500 block w-full sm:text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-md" placeholder="A brief description of the lesson content."></textarea>
-                </div>
-                 <InputWithIcon icon={<ClockIcon className="w-5 h-5 text-slate-400" />} type="text" placeholder="Duration (e.g., 15:30)" value={duration} onChange={e => setDuration(e.target.value)} required />
-                 <div>
-                    <label htmlFor="difficulty" className="block text-sm font-medium text-slate-700 dark:text-slate-300">Difficulty</label>
-                    <select id="difficulty" value={difficulty} onChange={e => setDifficulty(e.target.value as any)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm rounded-md">
-                        <option>Beginner</option>
-                        <option>Intermediate</option>
-                        <option>Advanced</option>
-                    </select>
-                </div>
-                 {error && <p className="text-sm text-red-600">{error}</p>}
-                <Button type="submit" className="w-full">Upload Lesson</Button>
-            </form>
-        </Modal>
-    );
-};
-
-const CreatePostModal: React.FC<{
-    isOpen: boolean;
-    onClose: () => void;
-    onSubmit: (data: { subjectId: string; type: PostType; text: string }) => void;
-    teacherSubjects: Subject[];
-}> = ({ isOpen, onClose, onSubmit, teacherSubjects }) => {
-    const [subjectId, setSubjectId] = useState(teacherSubjects[0]?.id || '');
-    const [type, setType] = useState<PostType>(PostType.Announcement);
-    const [text, setText] = useState('');
-    const [error, setError] = useState('');
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!subjectId || !text) {
-            setError('Please select a subject and write your post.');
-            return;
-        }
-        onSubmit({ subjectId, type, text });
-    };
-
-    return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Create New Post">
-            <form onSubmit={handleSubmit} className="space-y-4">
-                 <div>
-                    <label htmlFor="post-subject" className="block text-sm font-medium text-slate-700 dark:text-slate-300">Subject</label>
-                    <select id="post-subject" value={subjectId} onChange={e => setSubjectId(e.target.value)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm rounded-md">
-                        {teacherSubjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    </select>
-                </div>
-                <div>
-                    <label htmlFor="post-type" className="block text-sm font-medium text-slate-700 dark:text-slate-300">Post Type</label>
-                    <select id="post-type" value={type} onChange={e => setType(e.target.value as PostType)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm rounded-md">
-                        <option value={PostType.Announcement}>Announcement</option>
-                        <option value={PostType.Question}>Question</option>
-                    </select>
-                </div>
-                 <div>
-                     <label htmlFor="post-text" className="block text-sm font-medium text-slate-700 dark:text-slate-300">Message</label>
-                    <textarea id="post-text" value={text} onChange={e => setText(e.target.value)} rows={4} className="mt-1 shadow-sm focus:ring-teal-500 focus:border-teal-500 block w-full sm:text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-md" placeholder="Write your announcement or question here..."></textarea>
-                </div>
-                {error && <p className="text-sm text-red-600">{error}</p>}
-                <Button type="submit" className="w-full">Create Post</Button>
-            </form>
-        </Modal>
-    );
-}
-
-const TeacherDashboard: React.FC<{
-    user: User;
-    subjects: Subject[];
-    activityLogs: ActivityLog[];
-    onStartLiveClass: (subjectId: string, title: string) => void;
-    onUploadLesson: (data: Omit<VideoLesson, 'id' | 'thumbnail'>) => void;
-    onCreatePost: (data: { subjectId: string; type: PostType; text: string }) => void;
-}> = ({ user, subjects, activityLogs, onStartLiveClass, onUploadLesson, onCreatePost }) => {
-    const [liveClassModalOpen, setLiveClassModalOpen] = useState(false);
-    const [uploadModalOpen, setUploadModalOpen] = useState(false);
-    const [postModalOpen, setPostModalOpen] = useState(false);
-    const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
-    const [liveClassTitle, setLiveClassTitle] = useState('');
-
-    const handleOpenModal = (subject: Subject) => {
-        setSelectedSubject(subject);
-        setLiveClassTitle('');
-        setLiveClassModalOpen(true);
-    };
-
-    const handleCloseModal = () => {
-        setLiveClassModalOpen(false);
-        setSelectedSubject(null);
-    };
-
-    const handleConfirmStartLive = () => {
-        if (selectedSubject && liveClassTitle) {
-            onStartLiveClass(selectedSubject.id, liveClassTitle);
-            handleCloseModal();
-        }
-    };
-
-    return (
-        <div className="p-4 text-slate-800 dark:text-slate-100 animate-fade-in-up space-y-6">
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm flex items-center gap-4">
-                <h2 className="text-xl font-bold">Quick Actions</h2>
-                <Button onClick={() => setUploadModalOpen(true)} variant="secondary" className="flex items-center gap-2">
-                    <CloudArrowUpIcon className="w-5 h-5"/> Upload Lesson
-                </Button>
-                <Button onClick={() => setPostModalOpen(true)} variant="secondary" className="flex items-center gap-2">
-                    <PencilIcon className="w-5 h-5"/> Create Post
-                </Button>
-            </div>
-            
-            <UploadLessonModal isOpen={uploadModalOpen} onClose={() => setUploadModalOpen(false)} onSubmit={onUploadLesson} teacherSubjects={subjects} />
-            <CreatePostModal isOpen={postModalOpen} onClose={() => setPostModalOpen(false)} onSubmit={onCreatePost} teacherSubjects={subjects} />
-            
-            <ActivityFeed logs={activityLogs} title="Your Recent Activity"/>
-
-            <div>
-                <h2 className="text-xl font-bold mb-4">Your Subjects</h2>
-                {subjects.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {subjects.map(subject => (
-                            <div key={subject.id} className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm flex justify-between items-center">
-                                <div>
-                                    <h3 className="font-bold text-lg">{subject.name}</h3>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">{subject.description}</p>
-                                </div>
-                                <Button onClick={() => handleOpenModal(subject)} className="!py-2 !px-4 text-sm !bg-red-500 hover:!bg-red-600 focus:!ring-red-300 flex items-center gap-2">
-                                    <RssIcon className="w-5 h-5"/>
-                                    Go Live
-                                </Button>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <p className="text-slate-500 dark:text-slate-400">You are not assigned to any subjects yet.</p>
-                )}
-            </div>
-
-            {selectedSubject && (
-                <Modal isOpen={liveClassModalOpen} onClose={handleCloseModal} title={`Start Live Class for ${selectedSubject.name}`}>
-                    <div className="space-y-4">
-                        <p className="text-slate-600 dark:text-slate-300">Enter a title for your live session. All students will be notified when you go live.</p>
-                        <InputWithIcon 
-                            icon={<PencilIcon className="w-5 h-5 text-slate-400" />}
-                            type="text"
-                            placeholder="e.g., Chapter 5 Review Session"
-                            value={liveClassTitle}
-                            onChange={(e) => setLiveClassTitle(e.target.value)}
-                        />
-                        <Button onClick={handleConfirmStartLive} className="w-full" disabled={!liveClassTitle}>
-                            Confirm & Go Live
-                        </Button>
-                    </div>
-                </Modal>
-            )}
-        </div>
-    );
-};
-
-// FIX: Moved WithdrawalModal outside of the App component and passed addToast as a prop to resolve scoping issues.
-const WithdrawalModal: React.FC<{isOpen: boolean, onClose: () => void, onWithdraw: (w: Omit<Withdrawal, 'id' | 'timestamp'>) => void, balance: number, addToast: (message: string, type?: 'success' | 'error' | 'info') => void}> = ({isOpen, onClose, onWithdraw, balance, addToast}) => {
-    const [method, setMethod] = useState<'Airtel Money' | 'TNM Mpamba' | 'Bank'>('Airtel Money');
-    const [amount, setAmount] = useState('');
-    const [details, setDetails] = useState({ phone: '', bankName: '', accountNumber: '' });
-    
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        const numAmount = parseFloat(amount);
-        if (!numAmount || numAmount <= 0 || numAmount > balance) {
-            addToast("Invalid amount.", "error");
-            return;
-        }
-
-        let withdrawalData: Omit<Withdrawal, 'id' | 'timestamp'>;
-        if (method === 'Bank') {
-            if (!details.bankName || !details.accountNumber) {
-                 addToast("Bank details are required.", "error");
-                return;
-            }
-            withdrawalData = { amount: numAmount, method, bankName: details.bankName, accountNumber: details.accountNumber };
-        } else {
-             if (!details.phone) {
-                 addToast("Phone number is required.", "error");
-                return;
-            }
-            withdrawalData = { amount: numAmount, method, phoneNumber: details.phone };
-        }
-        onWithdraw(withdrawalData);
-        onClose();
-    };
-
-    return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Make a Withdrawal">
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <p>Available Balance: <strong>K{balance.toLocaleString()}</strong></p>
-                <InputWithIcon icon={<BanknotesIcon className="w-5 h-5 text-slate-400" />} type="number" placeholder="Amount" value={amount} onChange={e => setAmount(e.target.value)} required />
-                <select value={method} onChange={e => setMethod(e.target.value as any)} className="w-full px-4 py-3 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500">
-                    <option>Airtel Money</option>
-                    <option>TNM Mpamba</option>
-                    <option>Bank</option>
-                </select>
-
-                {method === 'Bank' ? (
-                    <>
-                        <InputWithIcon icon={<BuildingStorefrontIcon className="w-5 h-5 text-slate-400" />} type="text" placeholder="Bank Name" value={details.bankName} onChange={e => setDetails({...details, bankName: e.target.value})} required />
-                        <InputWithIcon icon={<WalletIcon className="w-5 h-5 text-slate-400" />} type="text" placeholder="Account Number" value={details.accountNumber} onChange={e => setDetails({...details, accountNumber: e.target.value})} required />
-                    </>
-                ) : (
-                    <InputWithIcon icon={<PhoneIcon className="w-5 h-5 text-slate-400" />} type="tel" placeholder="Phone Number" value={details.phone} onChange={e => setDetails({...details, phone: e.target.value})} required />
-                )}
-                <Button type="submit" className="w-full">Confirm Withdrawal</Button>
-            </form>
-        </Modal>
-    )
-}
-
-const OwnerDashboard: React.FC<{
-    user: User;
-    allUsers: User[];
-    payments: PaymentRecord[];
-    withdrawals: Withdrawal[];
-    messages: DirectMessage[];
-    applications: JobApplication[];
-    activityLogs: ActivityLog[];
-    onUpdateApplicationStatus: (id: string, status: ApplicationStatus) => void;
-    onWithdraw: (withdrawal: Omit<Withdrawal, 'id' | 'timestamp'>) => void;
-    onViewUser: (user: User) => void;
-    addToast: (message: string, type?: 'success' | 'error' | 'info') => void;
-}> = ({ user, allUsers, payments, withdrawals, messages, applications, activityLogs, onUpdateApplicationStatus, onWithdraw, onViewUser, addToast }) => {
-    const [activeTab, setActiveTab] = useState('Dashboard');
-    const [isWithdrawalModalOpen, setWithdrawalModalOpen] = useState(false);
-    const [selectedConversation, setSelectedConversation] = useState<{ user1: User, user2: User } | null>(null);
-    const tabs = ['Dashboard', 'Students', 'Teachers', 'Finance', 'Communication', 'Applications'];
-
-    const TabButton: React.FC<{ name: string }> = ({ name }) => (
-        <button
-            onClick={() => setActiveTab(name)}
-            className={`px-4 py-2 font-semibold transition-colors duration-200 whitespace-nowrap ${
-                activeTab === name
-                    ? 'border-b-2 border-teal-500 text-teal-600 dark:text-teal-400'
-                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-            }`}
-        >
-            {name}
-        </button>
-    );
-
-    const DashboardTabContent = () => {
-         const students = allUsers.filter(u => u.role === Role.Student);
-         return (
-             <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <StatCard icon={<UsersIcon />} title="Total Students" value={students.length} gradient="text-white bg-gradient-to-br from-blue-500 to-indigo-600" />
-                    <StatCard icon={<BanknotesIcon />} title="Total Revenue" value={`K${payments.reduce((sum, p) => sum + p.amount, 0).toLocaleString()}`} gradient="text-white bg-gradient-to-br from-green-500 to-emerald-600" />
-                    <StatCard icon={<RssIcon />} title="Active Plans" value={students.filter(s => getSubscriptionStatus(s).status === 'Active').length} gradient="text-white bg-gradient-to-br from-purple-500 to-violet-600" />
-                </div>
-                <ActivityFeed logs={activityLogs.filter(log => log.userId === APP_OWNER_ID)} />
-            </div>
-         );
-    };
-    
-    const UserTable: React.FC<{users: User[], title: string}> = ({users, title}) => (
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm">
-            <h2 className="text-xl font-bold mb-4">{title}</h2>
-            <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                    <thead className="text-left bg-slate-50 dark:bg-slate-700">
-                        <tr>
-                            <th className="p-2">Name</th>
-                            <th className="p-2">Email</th>
-                            <th className="p-2">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {users.map(u => (
-                            <tr key={u.id} className="border-b dark:border-slate-700">
-                                <td className="p-2 font-medium">{u.name}</td>
-                                <td className="p-2 text-slate-500">{u.email}</td>
-                                <td className="p-2"><Button onClick={() => onViewUser(u)} variant="secondary" className="!py-1 !px-3 text-xs">View</Button></td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    );
-    
-    const FinanceTabContent = () => {
-        const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
-        const totalWithdrawals = withdrawals.reduce((sum, w) => sum + w.amount, 0);
-        const availableBalance = totalRevenue - totalWithdrawals;
-
-        return (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                 <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm lg:col-span-2">
-                    <h2 className="text-xl font-bold mb-4">Platform Balance & Withdrawals</h2>
-                    <div className="grid grid-cols-3 gap-4 text-center mb-6">
-                        <div><p className="text-slate-500">Total Revenue</p><p className="text-2xl font-bold text-green-600">K{totalRevenue.toLocaleString()}</p></div>
-                        <div><p className="text-slate-500">Total Withdrawals</p><p className="text-2xl font-bold text-red-600">K{totalWithdrawals.toLocaleString()}</p></div>
-                        <div><p className="text-slate-500">Available Balance</p><p className="text-2xl font-bold text-blue-600">K{availableBalance.toLocaleString()}</p></div>
-                    </div>
-                     <div className="border-t dark:border-slate-700 pt-4 flex justify-end">
-                        <Button onClick={() => setWithdrawalModalOpen(true)} disabled={availableBalance <= 0}>Make a Withdrawal</Button>
-                    </div>
-                </div>
-
-                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm">
-                    <h2 className="text-xl font-bold mb-4">Recent Transactions</h2>
-                    <div className="space-y-3 max-h-96 overflow-y-auto">
-                        {payments.sort((a,b) => b.date.getTime() - a.date.getTime()).map(p => (
-                            <div key={p.id} className="flex justify-between items-center">
-                                <div><p className="font-semibold">{p.studentName}</p><p className="text-xs text-slate-500">{p.date.toLocaleString()}</p></div>
-                                <div className="text-right"><p className="font-bold text-green-600 dark:text-green-400">+K{p.amount.toLocaleString()}</p><p className="text-xs text-slate-500">{p.plan} via {p.method}</p></div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm">
-                    <h2 className="text-xl font-bold mb-4">Withdrawal History</h2>
-                     <div className="space-y-3 max-h-96 overflow-y-auto">
-                        {withdrawals.sort((a,b) => b.timestamp.getTime() - a.timestamp.getTime()).map(w => (
-                            <div key={w.id} className="flex justify-between items-center">
-                                <div><p className="font-semibold">{w.method} - {w.method === 'Bank' ? w.accountNumber : w.phoneNumber}</p><p className="text-xs text-slate-500">{w.timestamp.toLocaleString()}</p></div>
-                                <div className="text-right"><p className="font-bold text-red-600 dark:text-red-400">-K{w.amount.toLocaleString()}</p></div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-                <WithdrawalModal
-                    isOpen={isWithdrawalModalOpen}
-                    onClose={() => setWithdrawalModalOpen(false)}
-                    onWithdraw={onWithdraw}
-                    balance={availableBalance}
-                    addToast={addToast}
-                />
-            </div>
-        );
-    }
-
-    const CommunicationTabContent = () => {
-        const conversationsMap = new Map<string, { user1: User, user2: User, lastMessage: DirectMessage }>();
-        messages.forEach(msg => {
-            const user1Id = msg.senderId < msg.receiverId ? msg.senderId : msg.receiverId;
-            const user2Id = msg.senderId < msg.receiverId ? msg.receiverId : msg.senderId;
-            const key = `${user1Id}-${user2Id}`;
-            
-            if (!conversationsMap.has(key) || conversationsMap.get(key)!.lastMessage.timestamp < msg.timestamp) {
-                const user1 = allUsers.find(u => u.id === user1Id);
-                const user2 = allUsers.find(u => u.id === user2Id);
-                if (user1 && user2) {
-                    conversationsMap.set(key, { user1, user2, lastMessage: msg });
-                }
-            }
-        });
-        const conversations = Array.from(conversationsMap.values());
-    
-        if (selectedConversation) {
-            const { user1, user2 } = selectedConversation;
-            const conversationMessages = messages
-                .filter(m => (m.senderId === user1.id && m.receiverId === user2.id) || (m.senderId === user2.id && m.receiverId === user1.id))
-                .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-
-            return (
-                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm">
-                    <button onClick={() => setSelectedConversation(null)} className="flex items-center gap-2 text-teal-600 font-semibold mb-4"><ArrowLeftIcon className="w-5 h-5"/> Back to conversations</button>
-                    <h3 className="font-bold text-lg mb-4">Conversation between {user1.name} & {user2.name}</h3>
-                    <div className="space-y-3 max-h-96 overflow-y-auto">
-                        {conversationMessages.map(msg => {
-                            const sender = msg.senderId === user1.id ? user1 : user2;
-                            return (
-                                <div key={msg.id} className="flex items-start gap-2">
-                                    <img src={sender.profilePicture} alt={sender.name} className="w-8 h-8 rounded-full" />
-                                    <div>
-                                        <p className="font-semibold text-sm">{sender.name}</p>
-                                        <p className="bg-slate-100 dark:bg-slate-700 p-2 rounded-lg">{msg.text}</p>
-                                    </div>
-                                </div>
-                            )
-                        })}
-                    </div>
-                </div>
-            )
-        }
-
-        return (
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm">
-                <h2 className="text-xl font-bold mb-4">All Conversations</h2>
-                <div className="space-y-2">
-                    {conversations.map(({ user1, user2, lastMessage }, index) => (
-                        <div key={index} onClick={() => setSelectedConversation({ user1, user2 })} className="p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <div className="flex -space-x-4">
-                                        <img src={user1.profilePicture} alt={user1.name} className="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800"/>
-                                        <img src={user2.profilePicture} alt={user2.name} className="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800"/>
-                                    </div>
-                                    <p className="font-semibold">{user1.name} & {user2.name}</p>
-                                </div>
-                                <p className="text-xs text-slate-500">{lastMessage.timestamp.toLocaleDateString()}</p>
-                            </div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 truncate pl-12">{lastMessage.text}</p>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-    };
-
-    const ApplicationsTabContent = () => (
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm">
-            <h2 className="text-xl font-bold mb-4">Teacher Job Applications</h2>
-            <div className="space-y-4">
-                {applications.map(app => (
-                    <div key={app.id} className="border dark:border-slate-700 rounded-lg p-3">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="font-bold">{app.name} <span className="text-sm font-normal text-slate-500"> - {app.email}</span></p>
-                                <p className="text-sm text-slate-600 dark:text-slate-300">Subjects: {app.subjects.join(', ')}</p>
-                            </div>
-                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${app.status === ApplicationStatus.Pending ? 'bg-yellow-100 text-yellow-800' : app.status === ApplicationStatus.Approved ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{app.status}</span>
-                        </div>
-                        {app.status === ApplicationStatus.Pending && (
-                             <div className="flex gap-2 mt-2">
-                                <Button onClick={() => onUpdateApplicationStatus(app.id, ApplicationStatus.Approved)} className="!py-1 !px-3 text-xs !bg-green-500 hover:!bg-green-600">Approve</Button>
-                                <Button onClick={() => onUpdateApplicationStatus(app.id, ApplicationStatus.Rejected)} variant="secondary" className="!py-1 !px-3 text-xs !bg-red-500 text-white hover:!bg-red-600">Reject</Button>
-                            </div>
-                        )}
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-
-    const renderContent = () => {
-        switch (activeTab) {
-            case 'Dashboard': return <DashboardTabContent />;
-            case 'Students': return <UserTable users={allUsers.filter(u => u.role === Role.Student)} title="All Students" />;
-            case 'Teachers': return <UserTable users={allUsers.filter(u => u.role === Role.Teacher)} title="All Teachers" />;
-            case 'Finance': return <FinanceTabContent />;
-            case 'Communication': return <CommunicationTabContent />;
-            case 'Applications': return <ApplicationsTabContent />;
-            default: return null;
-        }
-    };
-    
-    return (
-        <div className="p-4 text-slate-800 dark:text-slate-100 animate-fade-in-up space-y-6">
-             <div>
-                <h1 className="text-3xl font-bold mb-2">Owner Dashboard</h1>
-                <p className="text-slate-500 dark:text-slate-400">Welcome, {user.name}. Oversee platform activity here.</p>
-            </div>
-            <div className="border-b border-slate-200 dark:border-slate-700 overflow-x-auto">
-                <div className="flex -mb-px">
-                    {tabs.map(tab => <TabButton key={tab} name={tab} />)}
-                </div>
-            </div>
-            <div className="mt-6">
-                {renderContent()}
-            </div>
-        </div>
-    );
-}
-
-const VideoPlayerModal: React.FC<{ lesson: VideoLesson, subject: Subject, onClose: () => void }> = ({ lesson, subject, onClose }) => {
-    const videoRef = useRef<HTMLVideoElement>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [progress, setProgress] = useState(0);
-    const [currentTime, setCurrentTime] = useState(0);
-    const [duration, setDuration] = useState(0);
-    const [isMuted, setIsMuted] = useState(false);
-    const [playbackRate, setPlaybackRate] = useState(1);
-    const [isControlsVisible, setIsControlsVisible] = useState(true);
-
-    const togglePlay = () => {
-        if (videoRef.current) {
-            if (videoRef.current.paused) {
-                videoRef.current.play();
-                setIsPlaying(true);
-            } else {
-                videoRef.current.pause();
-                setIsPlaying(false);
-            }
-        }
-    };
-    
-    const handleProgress = () => {
-        if (videoRef.current) {
-            const percentage = (videoRef.current.currentTime / videoRef.current.duration) * 100;
-            setProgress(percentage);
-            setCurrentTime(videoRef.current.currentTime);
-            setDuration(videoRef.current.duration || 0);
-        }
-    };
-
-    const handleScrub = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-        if (videoRef.current) {
-            const scrubTime = (e.nativeEvent.offsetX / e.currentTarget.offsetWidth) * videoRef.current.duration;
-            videoRef.current.currentTime = scrubTime;
-        }
-    };
-
-    const handleChapterClick = (time: number) => {
-        if(videoRef.current) videoRef.current.currentTime = time;
-    }
-
-    const toggleMute = () => {
-        if (videoRef.current) {
-            videoRef.current.muted = !videoRef.current.muted;
-            setIsMuted(videoRef.current.muted);
-        }
-    };
-
-    const handlePlaybackRateChange = (rate: number) => {
-        if(videoRef.current) {
-            videoRef.current.playbackRate = rate;
-            setPlaybackRate(rate);
-        }
-    }
-    
-    const toggleFullscreen = () => {
-        if (!document.fullscreenElement) {
-            containerRef.current?.requestFullscreen().catch(err => {
-                alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
-            });
-        } else {
-            document.exitFullscreen();
-        }
-    };
-
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-
-            switch (e.code) {
-                case 'Space':
-                    e.preventDefault();
-                    togglePlay();
-                    break;
-                case 'ArrowRight':
-                    if (videoRef.current) videoRef.current.currentTime += 5;
-                    break;
-                case 'ArrowLeft':
-                    if (videoRef.current) videoRef.current.currentTime -= 5;
-                    break;
-            }
-        };
-
-        document.addEventListener('keydown', handleKeyDown);
-        return () => document.removeEventListener('keydown', handleKeyDown);
-    }, []);
-
-    return (
-        <Modal isOpen={true} onClose={onClose} title={lesson.title}>
-            <div className="space-y-4">
-                 <div ref={containerRef} className="aspect-video bg-black rounded-lg overflow-hidden relative group" onMouseEnter={() => setIsControlsVisible(true)} onMouseLeave={() => setIsControlsVisible(false)}>
-                    <video ref={videoRef} className="w-full h-full" onClick={togglePlay} onTimeUpdate={handleProgress} onEnded={() => setIsPlaying(false)}>
-                        <source src={`https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4`} type="video/mp4" />
-                        Your browser does not support the video tag.
-                    </video>
-                    <div className={`absolute inset-0 bg-black/20 transition-opacity duration-300 flex flex-col justify-between p-2 ${isControlsVisible || !isPlaying ? 'opacity-100' : 'opacity-0'}`}>
-                        <div></div> {/* Top spacer */}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <button onClick={togglePlay} className="text-white p-4 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 disabled:opacity-0 transition-opacity" disabled={isPlaying}>
-                                <PlayIcon className="w-8 h-8" />
-                            </button>
-                        </div>
-                        <div>
-                            <div className="relative h-1.5" onMouseMove={e => e.stopPropagation()}>
-                                 <div className="w-full bg-white/30 h-1.5 rounded-full cursor-pointer absolute" onClick={handleScrub}>
-                                    <div className="bg-red-500 h-full rounded-full" style={{ width: `${progress}%` }}></div>
-                                </div>
-                                {lesson.chapters && lesson.chapters.map(chapter => (
-                                    <div 
-                                        key={chapter.time} 
-                                        className="absolute top-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full cursor-pointer group/chapter" 
-                                        style={{ left: `${(chapter.time / duration) * 100}%` }}
-                                        onClick={(e) => {e.stopPropagation(); handleChapterClick(chapter.time);}}
-                                    >
-                                        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-black/70 text-white text-xs rounded opacity-0 group-hover/chapter:opacity-100 whitespace-nowrap">{chapter.title}</span>
-                                    </div>
-                                ))}
-                            </div>
-                           
-                            <div className="flex items-center justify-between mt-2 text-white">
-                                <div className="flex items-center gap-2">
-                                    <button onClick={togglePlay}>{isPlaying ? <PauseIcon className="w-6 h-6" /> : <PlayIcon className="w-6 h-6" />}</button>
-                                    <button onClick={toggleMute}>{isMuted ? <SpeakerXMarkIcon className="w-6 h-6" /> : <SpeakerWaveIcon className="w-6 h-6" />}</button>
-                                    <span className="text-xs">{formatTime(currentTime)} / {formatTime(duration)}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="group/speed relative">
-                                        <button className="text-xs font-bold w-10">{playbackRate}x</button>
-                                        <div className="absolute bottom-full right-1/2 translate-x-1/2 mb-2 bg-black/70 rounded-md p-1 opacity-0 group-hover/speed:opacity-100 transition-opacity flex flex-col gap-1">
-                                            {[0.5, 1, 1.5, 2].map(rate => (
-                                                <button key={rate} onClick={() => handlePlaybackRateChange(rate)} className={`px-2 py-1 rounded text-xs ${playbackRate === rate ? 'bg-teal-500' : 'hover:bg-white/20'}`}>{rate}x</button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <button onClick={toggleFullscreen}>{document.fullscreenElement ? <ArrowsPointingInIcon className="w-6 h-6" /> : <ArrowsPointingOutIcon className="w-6 h-6" />}</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div>
-                    <span className="text-sm font-semibold text-teal-600 dark:text-teal-400">{subject.name}</span>
-                    <p className="text-slate-600 dark:text-slate-300 mt-1">{lesson.description}</p>
-                </div>
-                <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${lesson.difficulty === 'Beginner' ? 'bg-green-100 text-green-800' : lesson.difficulty === 'Intermediate' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>{lesson.difficulty}</span>
-                    <span><ClockIcon className="w-4 h-4 inline mr-1" />{lesson.duration}</span>
-                </div>
-            </div>
-        </Modal>
-    );
-};
-
-const SubjectDetailView: React.FC<{
-    user: User;
-    subject: Subject;
-    lessons: VideoLesson[];
-    posts: SubjectPost[];
-    comments: PostComment[];
-    completions: LessonCompletion[];
-    bookmarks: LessonBookmark[];
-    onWatchLesson: (lesson: VideoLesson) => void;
-    onToggleBookmark: (lessonId: string) => void;
-    onAddComment: (postId: string, text: string) => void;
-}> = ({ user, subject, lessons, posts, comments, completions, bookmarks, onWatchLesson, onToggleBookmark, onAddComment }) => {
-    const [activeTab, setActiveTab] = useState('Lessons');
-    const [commentingOnPostId, setCommentingOnPostId] = useState<string | null>(null);
-
-    const isLessonCompleted = (lessonId: string) => {
-        return completions.some(c => c.studentId === user.id && c.lessonId === lessonId);
-    };
-
-    const isBookmarked = (lessonId: string) => {
-        return bookmarks.some(b => b.studentId === user.id && b.lessonId === lessonId);
-    }
-    
-    const TabButton: React.FC<{ name: string }> = ({ name }) => (
-        <button
-            onClick={() => setActiveTab(name)}
-            className={`px-4 py-3 font-semibold text-center transition-colors duration-200 ${
-                activeTab === name
-                    ? 'border-b-2 border-teal-500 text-teal-600 dark:text-teal-400'
-                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-            }`}
-        >
-            {name}
-        </button>
-    );
-
-    const CommentSection: React.FC<{ postId: string }> = ({ postId }) => {
-        const [newComment, setNewComment] = useState('');
-        const postComments = comments.filter(c => c.postId === postId).sort((a,b) => a.timestamp.getTime() - b.timestamp.getTime());
-        
-        const handleCommentSubmit = (e: React.FormEvent) => {
-            e.preventDefault();
-            if(newComment.trim()) {
-                onAddComment(postId, newComment.trim());
-                setNewComment('');
-            }
-        };
-
-        return (
-            <div className="mt-4 pt-3 border-t dark:border-slate-700">
-                {postComments.map(comment => (
-                    <div key={comment.id} className="flex items-start gap-2 mb-2">
-                        <img src={comment.authorProfilePic || `https://i.pravatar.cc/150?u=${comment.authorId}`} alt={comment.authorName} className="w-8 h-8 rounded-full object-cover mt-1"/>
-                        <div>
-                            <div className="bg-slate-100 dark:bg-slate-700 rounded-lg px-3 py-2">
-                                <p className="font-bold text-sm text-slate-800 dark:text-slate-100">{comment.authorName}</p>
-                                <p className="text-sm text-slate-600 dark:text-slate-300">{comment.text}</p>
-                            </div>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 ml-2">{new Date(comment.timestamp).toLocaleTimeString()}</p>
-                        </div>
-                    </div>
-                ))}
-                 <form onSubmit={handleCommentSubmit} className="flex items-center gap-2 mt-2">
-                    <img src={user.profilePicture} alt={user.name} className="w-8 h-8 rounded-full object-cover"/>
-                    <input type="text" value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="Write a comment..." className="flex-1 px-3 py-2 text-sm rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"/>
-                    <button type="submit" className="p-2 bg-teal-500 text-white rounded-full hover:bg-teal-600"><SendIcon className="w-5 h-5"/></button>
-                 </form>
-            </div>
-        );
-    }
-    
-    const PostCard: React.FC<{ post: SubjectPost }> = ({ post }) => {
-        const postComments = comments.filter(c => c.postId === post.id);
-        return (
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm">
-                <div className="flex items-start gap-3">
-                    <img src={post.teacherProfilePic || 'https://i.pravatar.cc/150'} alt={post.teacherName} className="w-10 h-10 rounded-full object-cover" />
-                    <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="font-bold text-slate-800 dark:text-slate-100">{post.teacherName}</p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">{new Date(post.timestamp).toLocaleString()}</p>
-                            </div>
-                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${post.type === PostType.Announcement ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}`}>{post.type}</span>
-                        </div>
-                        <p className="mt-2 text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{post.text}</p>
-                         <button onClick={() => setCommentingOnPostId(commentingOnPostId === post.id ? null : post.id)} className="text-sm text-slate-500 dark:text-slate-400 mt-2 hover:underline">
-                            {postComments.length} {postComments.length === 1 ? 'Comment' : 'Comments'}
-                         </button>
-                    </div>
-                </div>
-                {commentingOnPostId === post.id && <CommentSection postId={post.id} />}
-            </div>
-        );
-    }
-
-    return (
-        <div className="animate-fade-in-up">
-            <div className="h-40 relative">
-                <img src={subject.coverPhoto} alt={subject.name} className="w-full h-full object-cover"/>
-                <div className="absolute inset-0 bg-black/50 flex flex-col justify-end p-4">
-                     <h1 className="text-3xl font-bold text-white">{subject.name}</h1>
-                     <p className="text-slate-200">Taught by {subject.teacherName}</p>
-                </div>
-            </div>
-             <div className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 backdrop-blur-sm sticky top-[73px] z-10">
-                <div className="flex -mb-px">
-                    <TabButton name="Lessons" />
-                    <TabButton name="Posts" />
-                </div>
-            </div>
-            <div className="p-4 space-y-4">
-                {activeTab === 'Lessons' && (
-                    <>
-                        <p className="text-slate-600 dark:text-slate-300">{subject.description}</p>
-                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 border-t pt-4 border-slate-200 dark:border-slate-700">All Lessons</h2>
-                        <div className="space-y-3">
-                            {lessons.map(lesson => (
-                                <div key={lesson.id} onClick={() => onWatchLesson(lesson)} className="bg-white dark:bg-slate-800 p-3 rounded-lg flex items-center gap-4 shadow-sm cursor-pointer hover-lift">
-                                    <div className="flex-shrink-0">
-                                        {isLessonCompleted(lesson.id) ? 
-                                            <CheckCircleIcon className="w-8 h-8 text-green-500" /> :
-                                            <PlayIcon className="w-8 h-8 text-teal-500" />
-                                        }
-                                    </div>
-                                    <div className="flex-grow">
-                                        <h3 className="font-semibold text-slate-800 dark:text-slate-100">{lesson.title}</h3>
-                                        <p className="text-sm text-slate-500 dark:text-slate-400">{lesson.duration}</p>
-                                    </div>
-                                    <button onClick={(e) => { e.stopPropagation(); onToggleBookmark(lesson.id); }} className="p-2 text-slate-400 hover:text-yellow-500">
-                                        <BookmarkIcon filled={isBookmarked(lesson.id)} className="w-6 h-6" />
-                                    </button>
-                                     <img src={lesson.thumbnail} alt={lesson.title} className="w-24 h-14 object-cover rounded-md" />
-                                </div>
-                            ))}
-                        </div>
-                    </>
-                )}
-                 {activeTab === 'Posts' && (
-                    <div className="space-y-4">
-                       {posts.length > 0 ? posts.sort((a,b) => b.timestamp.getTime() - a.timestamp.getTime()).map(post => <PostCard key={post.id} post={post} />) : <p className="text-center text-slate-500 dark:text-slate-400 py-8">No posts from the teacher yet.</p>}
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-};
-
-const LiveStreamTopUpModal: React.FC<{ isOpen: boolean; onClose: () => void; onConfirm: () => void; liveClass: LiveClass }> = ({ isOpen, onClose, onConfirm, liveClass }) => (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Join Live Class: ${liveClass.title}`}>
-        <div className="text-center space-y-4">
-            <RssIcon className="w-16 h-16 mx-auto text-red-500" />
-            <p className="text-slate-600 dark:text-slate-300">
-                Live streaming is free for monthly members. To join this session, a one-time payment of K500 is required.
-            </p>
-            <Button onClick={onConfirm} className="w-full !bg-red-500 hover:!bg-red-600 focus:!ring-red-300">
-                Confirm and Pay K500
-            </Button>
-        </div>
-    </Modal>
-)
-
-const BookCard: React.FC<{ book: Book; onBuy: () => void; onRead: () => void; isOwned: boolean; }> = ({ book, onBuy, onRead, isOwned }) => (
-    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md overflow-hidden flex flex-col">
-        <img className="h-56 w-full object-cover" src={book.coverPhoto} alt={book.title} />
-        <div className="p-4 flex flex-col flex-grow">
-            <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">{book.title}</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400">by {book.author}</p>
-            <div className="mt-auto pt-3 flex justify-between items-center">
-                <p className="text-lg font-bold text-teal-600 dark:text-teal-400">K{book.price.toLocaleString()}</p>
-                <Button
-                    onClick={isOwned ? onRead : onBuy}
-                    className={isOwned ? '!bg-green-600' : ''}
-                    variant={isOwned ? 'primary' : 'secondary'}
-                >
-                    {isOwned ? 'Read Book' : 'Buy Now'}
-                </Button>
-            </div>
-        </div>
-    </div>
-);
-
-const BookStoreView: React.FC<{
-    books: Book[];
-    purchases: BookPurchase[];
-    studentId: string;
-    onBuyBook: (book: Book) => void;
-    onReadBook: (book: Book) => void;
-}> = ({ books, purchases, studentId, onBuyBook, onReadBook }) => {
-    const ownedBookIds = new Set(purchases.filter(p => p.studentId === studentId).map(p => p.bookId));
-
-    return (
-        <div className="p-4 animate-fade-in-up space-y-4">
-             <div className="text-center">
-                <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">SmartLearn Bookstore</h1>
-                <p className="text-slate-500 dark:text-slate-400 mt-1">Get recommended textbooks and study guides.</p>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {books.map(book => (
-                    <BookCard
-                        key={book.id}
-                        book={book}
-                        onBuy={() => onBuyBook(book)}
-                        onRead={() => onReadBook(book)}
-                        isOwned={ownedBookIds.has(book.id)}
-                    />
-                ))}
-            </div>
-        </div>
-    );
-};
-
-const JobApplicationModal: React.FC<{
-    isOpen: boolean;
-    onClose: () => void;
-    onSubmit: (data: { name: string, email: string, phoneNumber: string, subjects: string, cvFile: { name: string, dataUrl: string } | null }) => void;
-}> = ({ isOpen, onClose, onSubmit }) => {
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [phoneNumber, setPhoneNumber] = useState('');
-    const [subjects, setSubjects] = useState('');
-    const [cvFile, setCvFile] = useState<{ name: string, dataUrl: string } | null>(null);
-    const [error, setError] = useState('');
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            if (file.size > 5 * 1024 * 1024) { // 5MB limit
-                setError('File size cannot exceed 5MB.');
-                return;
-            }
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setCvFile({
-                    name: file.name,
-                    dataUrl: reader.result as string,
-                });
-                setError('');
-            };
-            reader.onerror = () => {
-                setError('Failed to read file.');
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!name || !email || !phoneNumber || !subjects || !cvFile) {
-            setError('Please fill all fields and upload your CV.');
-            return;
-        }
-        onSubmit({ name, email, phoneNumber, subjects, cvFile });
-    };
-
-    return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Apply for a Teaching Position">
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <p className="text-sm text-slate-600 dark:text-slate-400">We're excited to have you on board! Please fill out the form below.</p>
-                <InputWithIcon icon={<UserIcon className="w-5 h-5 text-slate-400" />} type="text" placeholder="Full Name" value={name} onChange={e => setName(e.target.value)} required />
-                <InputWithIcon icon={<EnvelopeIcon className="w-5 h-5 text-slate-400" />} type="email" placeholder="Email Address" value={email} onChange={e => setEmail(e.target.value)} required />
-                <InputWithIcon icon={<PhoneIcon className="w-5 h-5 text-slate-400" />} type="tel" placeholder="Phone Number" value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} required />
-                <InputWithIcon icon={<BookOpenIcon className="w-5 h-5 text-slate-400" />} type="text" placeholder="Subjects (comma-separated)" value={subjects} onChange={e => setSubjects(e.target.value)} required />
-                <div>
-                    <label htmlFor="cv-upload" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Upload CV</label>
-                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-300 dark:border-slate-600 border-dashed rounded-md">
-                        <div className="space-y-1 text-center">
-                            <CloudArrowUpIcon className="mx-auto h-12 w-12 text-slate-400" />
-                            <div className="flex text-sm text-slate-600 dark:text-slate-400">
-                                <label htmlFor="cv-upload" className="relative cursor-pointer bg-white dark:bg-slate-800 rounded-md font-medium text-teal-600 hover:text-teal-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-teal-500">
-                                    <span>Upload a file</span>
-                                    <input id="cv-upload" name="cv-upload" type="file" className="sr-only" onChange={handleFileChange} accept=".pdf,.doc,.docx" />
-                                </label>
-                                <p className="pl-1">or drag and drop</p>
-                            </div>
-                            <p className="text-xs text-slate-500">PDF, DOC, DOCX up to 5MB</p>
-                        </div>
-                    </div>
-                     {cvFile && (
-                        <div className="mt-2 text-sm text-slate-700 dark:text-slate-200 flex items-center gap-2">
-                           <DocumentCheckIcon className="w-5 h-5 text-green-500" />
-                           <span>{cvFile.name}</span>
-                        </div>
-                     )}
-                </div>
-                {error && <p className="text-sm text-red-600">{error}</p>}
-                <Button type="submit" className="w-full">Submit Application</Button>
-            </form>
-        </Modal>
-    );
-};
-
-interface SearchResults {
-    subjects: Subject[];
-    lessons: VideoLesson[];
-    liveClasses: LiveClass[];
-}
-
-const SearchResultsPanel: React.FC<{
-    results: SearchResults;
-    onSelectSubject: (subject: Subject) => void;
-    onSelectLesson: (lesson: VideoLesson) => void;
-    onSelectLiveClass: (liveClass: LiveClass) => void;
-}> = ({ results, onSelectSubject, onSelectLesson, onSelectLiveClass }) => {
-    const hasResults = results.subjects.length > 0 || results.lessons.length > 0 || results.liveClasses.length > 0;
-
-    const ResultItem: React.FC<{ icon: React.ReactNode; title: string; subtitle: string; onClick: () => void }> = ({ icon, title, subtitle, onClick }) => (
-        <div onClick={onClick} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">
-            <div className="flex-shrink-0 bg-slate-100 dark:bg-slate-700 p-2 rounded-full">
-                {icon}
-            </div>
-            <div>
-                <p className="font-semibold text-slate-800 dark:text-slate-100">{title}</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>
-            </div>
-        </div>
-    );
-
-    return (
-        <div className="absolute top-full right-4 mt-2 w-full max-w-md bg-white dark:bg-slate-800 rounded-lg shadow-lg border dark:border-slate-700 z-30 animate-fade-in-up overflow-hidden">
-            <div className="max-h-96 overflow-y-auto p-2">
-                {!hasResults && <p className="text-center text-slate-500 p-4">No results found.</p>}
-                
-                {results.subjects.length > 0 && (
-                    <div className="mb-2">
-                        <h3 className="px-2 py-1 text-xs font-bold text-slate-400 uppercase">Subjects</h3>
-                        {results.subjects.map(subject => (
-                            <ResultItem key={subject.id} icon={<AcademicCapIcon className="w-5 h-5 text-slate-500" />} title={subject.name} subtitle={subject.teacherName} onClick={() => onSelectSubject(subject)} />
-                        ))}
-                    </div>
-                )}
-                {results.lessons.length > 0 && (
-                    <div className="mb-2">
-                        <h3 className="px-2 py-1 text-xs font-bold text-slate-400 uppercase">Video Lessons</h3>
-                        {results.lessons.map(lesson => (
-                             <ResultItem key={lesson.id} icon={<VideoCameraIcon className="w-5 h-5 text-slate-500" />} title={lesson.title} subtitle={`Duration: ${lesson.duration}`} onClick={() => onSelectLesson(lesson)} />
-                        ))}
-                    </div>
-                )}
-                {results.liveClasses.length > 0 && (
-                    <div>
-                         <h3 className="px-2 py-1 text-xs font-bold text-slate-400 uppercase">Live Classes</h3>
-                         {results.liveClasses.map(lc => (
-                              <ResultItem key={lc.id} icon={<RssIcon className="w-5 h-5 text-red-500" />} title={lc.title} subtitle={lc.teacherName} onClick={() => onSelectLiveClass(lc)} />
-                         ))}
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-};
-
-
+// App.tsx
 export const App: React.FC = () => {
-    // Data state
+    // --- State Management ---
     const [users, setUsers] = useState<User[]>(USERS);
     const [subjects, setSubjects] = useState<Subject[]>(SUBJECTS);
-    const [lessons, setLessons] = useState<VideoLesson[]>(VIDEO_LESSONS);
+    const [videoLessons, setVideoLessons] = useState<VideoLesson[]>(VIDEO_LESSONS);
     const [liveClasses, setLiveClasses] = useState<LiveClass[]>(INITIAL_LIVE_CLASSES);
     const [payments, setPayments] = useState<PaymentRecord[]>(PAYMENT_HISTORY);
-    const [completions, setCompletions] = useState<LessonCompletion[]>(LESSON_COMPLETIONS);
+    const [quizzes, setQuizzes] = useState<Quiz[]>(QUIZZES);
+    const [quizAttempts, setQuizAttempts] = useState<QuizAttempt[]>(QUIZ_ATTEMPTS);
+    const [enrollments, setEnrollments] = useState<Enrollment[]>(ENROLLMENTS);
+    const [lessonCompletions, setLessonCompletions] = useState<LessonCompletion[]>(LESSON_COMPLETIONS);
     const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(ACTIVITY_LOGS);
+    const [books, setBooks] = useState<Book[]>(BOOKS);
     const [bookPurchases, setBookPurchases] = useState<BookPurchase[]>(BOOK_PURCHASES);
     const [bookReadings, setBookReadings] = useState<BookReading[]>(BOOK_READINGS);
     const [bookmarks, setBookmarks] = useState<LessonBookmark[]>(BOOKMARKS);
-    const [withdrawals, setWithdrawals] = useState<Withdrawal[]>(WITHDRAWALS);
-    const [directMessages, setDirectMessages] = useState<DirectMessage[]>(INITIAL_DIRECT_MESSAGES);
-    const [jobApplications, setJobApplications] = useState<JobApplication[]>(INITIAL_JOB_APPLICATIONS);
     const [subjectPosts, setSubjectPosts] = useState<SubjectPost[]>(SUBJECT_POSTS);
     const [postComments, setPostComments] = useState<PostComment[]>(POST_COMMENTS);
+    const [directMessages, setDirectMessages] = useState<DirectMessage[]>(INITIAL_DIRECT_MESSAGES);
+    const [examinations, setExaminations] = useState<Examination[]>(EXAMINATIONS);
     const [examinationAttempts, setExaminationAttempts] = useState<ExaminationAttempt[]>(EXAMINATION_ATTEMPTS);
-
-
-    // Auth and UI state
+    const [withdrawals, setWithdrawals] = useState<Withdrawal[]>(WITHDRAWALS);
+    
     const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [navigationStack, setNavigationStack] = useState<any[]>([{ page: 'dashboard' }]);
+    
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
-    const [currentView, setCurrentView] = useState('dashboard');
-    const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
-    const [selectedLesson, setSelectedLesson] = useState<VideoLesson | null>(null);
-    const [pendingLiveClass, setPendingLiveClass] = useState<LiveClass | null>(null);
-    const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
-    const [isApplicationModalOpen, setApplicationModalOpen] = useState(false);
-    const [pendingSignUp, setPendingSignUp] = useState<{ name: string; email: string; pass: string; } | null>(null);
-    const [theme, setTheme] = useState<'light' | 'dark'>('light');
-    const [isSettingsModalOpen, setSettingsModalOpen] = useState(false);
-    const [isNotificationsPanelOpen, setNotificationsPanelOpen] = useState(false);
-    const [selectedBookToRead, setSelectedBookToRead] = useState<Book | null>(null);
-    const [confirmationState, setConfirmationState] = useState<{
-        title: string;
-        message: React.ReactNode;
-        onConfirm: () => void;
-        confirmText: string;
-    } | null>(null);
-    const [activeExamState, setActiveExamState] = useState<{
-        exam: Examination;
-        answers: Record<string, string>;
-        currentQuestionIndex: number;
-        timeLeft: number;
-    } | null>(null);
-    const [lastExamResult, setLastExamResult] = useState<ExaminationAttempt | null>(null);
-    const [isMusicPlaying, setIsMusicPlaying] = useState(false);
-    const [selectedUserForDetail, setSelectedUserForDetail] = useState<User | null>(null);
-    const [activeLiveStream, setActiveLiveStream] = useState<LiveClass | null>(null);
-    const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
-    
-    // Derived state
-    const { status: subscriptionStatus, plan: subscriptionPlan } = getSubscriptionStatus(currentUser);
-    const unreadNotifications = activityLogs.filter(log => !log.read).length;
-    
-    // Refs
-    const notificationsRef = useRef<HTMLDivElement>(null);
-    const audioRef = useRef<HTMLAudioElement | null>(null);
-    const searchRef = useRef<HTMLDivElement>(null);
+    const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+    const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+    const [isDarkMode, setIsDarkMode] = useState(false);
+    const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+    const [isAboutUsOpen, setIsAboutUsOpen] = useState(false);
+    const [newContentModal, setNewContentModal] = useState<{type: 'lesson' | 'class', subjectId: string | null} | null>(null);
 
-    // Debounced search effect
-    useEffect(() => {
-        if (searchQuery.trim() === '') {
-            setSearchResults(null);
-            return;
-        }
+    const [tutorChatMessages, setTutorChatMessages] = useState<ChatMessage[]>([
+        { sender: 'ai', text: 'Hello! I am Bright Titan, your AI Tutor. How can I help you study today?', timestamp: new Date() }
+    ]);
+    const [tutorInput, setTutorInput] = useState('');
+    const [isTutorLoading, setIsTutorLoading] = useState(false);
 
-        const handler = setTimeout(() => {
-            const lowerCaseQuery = searchQuery.toLowerCase();
-            const filteredSubjects = subjects.filter(s => s.name.toLowerCase().includes(lowerCaseQuery));
-            const filteredLessons = lessons.filter(l => l.title.toLowerCase().includes(lowerCaseQuery));
-            const filteredLiveClasses = liveClasses.filter(lc => lc.title.toLowerCase().includes(lowerCaseQuery));
-            
-            setSearchResults({
-                subjects: filteredSubjects,
-                lessons: filteredLessons,
-                liveClasses: filteredLiveClasses,
-            });
-        }, 300);
+    const audioRef = useRef<HTMLAudioElement>(null);
+    const profileMenuRef = useRef<HTMLDivElement>(null);
 
-        return () => {
-            clearTimeout(handler);
-        };
-    }, [searchQuery, subjects, lessons, liveClasses]);
-
-    // Close search/notifications on outside click
-    useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-                setSearchQuery('');
-            }
-             if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
-                setNotificationsPanelOpen(false);
-            }
-        }
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [searchRef, notificationsRef]);
-
-    // Get audio element on mount
-    useEffect(() => {
-        audioRef.current = document.getElementById('background-music') as HTMLAudioElement;
-    }, []);
-
-    // Theme management
-    useEffect(() => {
-        const savedTheme = localStorage.getItem('smartlearn-theme') as 'light' | 'dark' | null;
-        const userPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (savedTheme) {
-            setTheme(savedTheme);
-        } else if (userPrefersDark) {
-            setTheme('dark');
-        }
-    }, []);
-
-    useEffect(() => {
-        if (theme === 'dark') {
+    // --- Effects ---
+     useEffect(() => {
+        const savedTheme = localStorage.getItem('smartlearn-theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
             document.documentElement.classList.add('dark');
-            localStorage.setItem('smartlearn-theme', 'dark');
+            setIsDarkMode(true);
         } else {
             document.documentElement.classList.remove('dark');
-            localStorage.setItem('smartlearn-theme', 'light');
+            setIsDarkMode(false);
         }
-    }, [theme]);
+    }, []);
 
-    const handleThemeToggle = () => {
-        setTheme(prev => prev === 'light' ? 'dark' : 'light');
-    };
-
-    const toggleMusic = () => {
-        if (audioRef.current) {
-            if (isMusicPlaying) {
-                audioRef.current.pause();
-            } else {
-                audioRef.current.play().catch(e => console.error("Audio play failed:", e));
-            }
-            setIsMusicPlaying(!isMusicPlaying);
-        }
-    };
-
-
-    // Open payment modal when a sign-up is pending
     useEffect(() => {
-        if (pendingSignUp) {
-            setPaymentModalOpen(true);
+        if (isMusicPlaying) {
+            audioRef.current?.play().catch(e => console.error("Audio play failed:", e));
+        } else {
+            audioRef.current?.pause();
         }
-    }, [pendingSignUp]);
+    }, [isMusicPlaying]);
 
-    // Toast handlers
-    const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
-        const id = Date.now();
-        setToasts(prev => [...prev, { id, message, type }]);
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+                setIsProfileMenuOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [profileMenuRef]);
+
+
+    // --- Derived State ---
+    const { status: subscriptionStatus, plan: subscriptionPlan } = getSubscriptionStatus(currentUser);
+    const currentPage = navigationStack[navigationStack.length - 1];
+    
+    // --- Navigation Handlers ---
+    const navigate = (page: string, params: any = {}) => {
+        setNavigationStack(prev => [...prev, { page, ...params }]);
     };
-    const dismissToast = (id: number) => {
-        setToasts(prev => prev.filter(t => t.id !== id));
+    const goBack = () => {
+        if (navigationStack.length > 1) {
+            setNavigationStack(prev => prev.slice(0, -1));
+        }
+    };
+    const resetToDashboard = () => setNavigationStack([{ page: 'dashboard' }]);
+
+    // --- Helper & Handler Functions ---
+    const addToast = (message: string, type: 'success' | 'error' | 'info') => {
+        const newToast: ToastMessage = { id: Date.now(), message, type };
+        setToasts(prev => [newToast, ...prev]);
+    };
+    const dismissToast = (id: number) => setToasts(prev => prev.filter(t => t.id !== id));
+    
+    const handleToggleTheme = () => {
+        setIsDarkMode(prev => {
+            const newIsDark = !prev;
+            if (newIsDark) {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('smartlearn-theme', 'dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('smartlearn-theme', 'light');
+            }
+            return newIsDark;
+        });
     };
 
-    // Auth handlers
+    // --- Auth Handlers ---
     const handleLogin = (email: string, pass: string, role: Role) => {
-        const user = users.find(u => u.email === email && u.password === pass && u.role === role);
+        const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === pass && u.role === role);
         if (user) {
+            if(user.role === Role.Teacher && user.teacherApplication?.status !== 'Approved'){
+                addToast('Your application is still pending review.', 'info');
+                return;
+            }
             setCurrentUser(user);
             addToast(`Welcome back, ${user.name}!`, 'success');
         } else {
-            addToast('Invalid credentials or role.', 'error');
+            addToast('Invalid credentials for the selected role.', 'error');
         }
     };
+    const handleGoogleAuth = (role: Role) => {
+         const defaultUser = users.find(u => u.role === role);
+         if(defaultUser) {
+             setCurrentUser(defaultUser);
+             addToast(`Signed in as ${defaultUser.name} via Google.`, 'success');
+         } else {
+             addToast(`No default ${role} account for simulation.`, 'error');
+         }
+    };
+    const handleLogout = () => {
+        setCurrentUser(null);
+        resetToDashboard();
+        setIsProfileMenuOpen(false);
+        addToast('You have been logged out.', 'info');
+    };
     
-    const handleSignUp = (name: string, email: string, pass: string, role: Role) => {
-        if (users.some(u => u.email === email)) {
+    const handleSignUp = (name: string, email: string, pass: string, role: Role, cvFile: File | null, message: string) => {
+        if(users.some(u => u.email.toLowerCase() === email.toLowerCase())){
             addToast('An account with this email already exists.', 'error');
             return;
         }
-        if (role === Role.Student) {
-            // Store registration data and trigger payment flow
-            setPendingSignUp({ name, email, pass });
-        } else {
-            addToast('Sign-up is currently only available for students.', 'info');
-        }
-    };
-    
-    const handleGoogleAuth = () => {
-        // Simulate logging in as an existing student user
-        const simulatedUser = users.find(u => u.id === 'user-1');
-        if (simulatedUser) {
-            setCurrentUser(simulatedUser);
-            addToast(`Welcome back, ${simulatedUser.name}!`, 'success');
-        } else {
-            addToast('Could not sign in with Google.', 'error');
-        }
-    };
-
-    const handleLogout = () => {
-        setCurrentUser(null);
-        setCurrentView('dashboard');
-        setSelectedSubject(null);
-        setSettingsModalOpen(false);
-        setActiveLiveStream(null);
-        addToast("You've been logged out.", 'info');
-    };
-
-    const handleUpdateApplicationStatus = (id: string, status: ApplicationStatus) => {
-        setJobApplications(prev => prev.map(app => app.id === id ? { ...app, status } : app));
-        const app = jobApplications.find(a => a.id === id);
-        if (app) {
-            addToast(`Application from ${app.name} has been ${status.toLowerCase()}.`, 'success');
-        }
-    };
-    
-    const handleJobApplicationSubmit = (formData: { name: string, email: string, phoneNumber: string, subjects: string, cvFile: { name: string, dataUrl: string } | null }) => {
-        const newApplication: JobApplication = {
-            id: `app-${Date.now()}`,
-            name: formData.name,
-            email: formData.email,
-            phoneNumber: formData.phoneNumber,
-            subjects: formData.subjects.split(',').map(s => s.trim()).filter(s => s),
-            status: ApplicationStatus.Pending,
-            timestamp: new Date(),
-            cvFileName: formData.cvFile?.name,
-            cvDataUrl: formData.cvFile?.dataUrl,
+        
+        const newUser: User = { 
+            id: `user-${users.length + 1}`, 
+            name, 
+            email, 
+            password: pass, 
+            role, 
+            profilePicture: `https://i.pravatar.cc/150?u=user-${users.length + 1}`,
+            ...(role === Role.Student && { subscription: { plan: SubscriptionPlan.None, startDate: new Date(), endDate: new Date() } })
         };
-    
-        setJobApplications(prev => [newApplication, ...prev]);
-    
-        const newLog: ActivityLog = {
-            id: `log-${Date.now()}`,
-            userId: APP_OWNER_ID,
-            type: ActivityType.NewApplication,
-            text: `New job application received from ${formData.name}.`,
-            timestamp: new Date(),
-            read: false,
-        };
-    
-        setActivityLogs(prev => [newLog, ...prev]);
-        setApplicationModalOpen(false);
-        addToast('Your application has been submitted successfully!', 'success');
-    };
 
-    const handleMarkLessonComplete = (lessonId: string) => {
-        if (!currentUser || currentUser.role !== Role.Student) return;
-
-        const alreadyCompleted = completions.some(c => c.studentId === currentUser.id && c.lessonId === lessonId);
-        if (!alreadyCompleted) {
-            const newCompletion: LessonCompletion = {
-                studentId: currentUser.id,
-                lessonId: lessonId,
-                completedAt: new Date(),
+        if (role === Role.Teacher) {
+            newUser.teacherApplication = {
+                cvUrl: cvFile ? `/path/to/${cvFile.name}` : '/path/to/default_cv.pdf', // Simulated URL
+                message: message,
+                status: 'Pending',
             };
-            setCompletions(prev => [...prev, newCompletion]);
-        }
-    };
-
-    const handleCloseVideoPlayer = () => {
-        if (selectedLesson) {
-            handleMarkLessonComplete(selectedLesson.id);
-            addToast("Lesson completed!", 'success');
-        }
-        setSelectedLesson(null);
-    };
-
-    const handleBack = () => {
-        if (activeLiveStream) {
-            setActiveLiveStream(null);
-            return;
-        }
-        if (activeExamState) return; // Cannot go back during an exam
-        if(activeConversationId) {
-            setActiveConversationId(null);
-            return;
-        }
-        
-        if (lastExamResult) {
-            setLastExamResult(null);
-            setCurrentView('examinations');
-        } else if (selectedBookToRead) {
-            setSelectedBookToRead(null);
-            setCurrentView('bookstore');
-        } else if (selectedSubject) {
-            setSelectedSubject(null);
-            setCurrentView('subjects');
+             // Log for owner
+            const ownerLog: ActivityLog = { id: `log-${activityLogs.length + 1}`, userId: APP_OWNER_ID, type: ActivityType.TeacherApplication, text: `${name} has applied to be a teacher.`, timestamp: new Date(), read: false };
+            setActivityLogs(prev => [...prev, ownerLog]);
+            setUsers(prev => [...prev, newUser]);
+            addToast('Application submitted! You will be notified upon review.', 'success');
         } else {
-            setCurrentView('dashboard');
-        }
-    };
-
-    const handleSelectSubject = (subject: Subject) => {
-        if (currentUser?.role === Role.Student && subscriptionStatus !== 'Active') {
-            addToast("Please subscribe to access subjects.", "info");
-            setPaymentModalOpen(true);
-            return;
-        }
-        setSelectedSubject(subject);
-    }
-
-    const handleJoinLiveClass = (liveClass: LiveClass) => {
-        if (!currentUser) return;
-
-        const startLiveSession = () => {
-            setActiveLiveStream(liveClass);
-            addToast(`Joining live class: ${liveClass.title}`, 'success');
-        }
-
-        // FIX: Check if user has a monthly plan OR has paid for this specific class.
-        if (subscriptionPlan === SubscriptionPlan.Monthly || currentUser.subscription?.liveClassAccessId === liveClass.id) {
-            startLiveSession();
-        } else if (subscriptionStatus === 'Active') { // Daily/Weekly active users need to top-up
-            setPendingLiveClass(liveClass);
-        } else { // Expired or None subscription
-            addToast("You need an active subscription to join live classes.", "error");
-            setPaymentModalOpen(true);
-        }
-    };
-
-    const handleStartLiveClass = (subjectId: string, title: string) => {
-        if (!currentUser || currentUser.role !== Role.Teacher) return;
-    
-        const subject = subjects.find(s => s.id === subjectId);
-        if (!subject) {
-            addToast("Could not find the selected subject.", "error");
-            return;
-        }
-    
-        const newLiveClass: LiveClass = {
-            id: `lc-${Date.now()}`,
-            subjectId,
-            title,
-            teacherName: currentUser.name,
-            teacherId: currentUser.id,
-            startTime: new Date(), // Starts now
-        };
-    
-        setLiveClasses(prev => [newLiveClass, ...prev]);
-        setActiveLiveStream(newLiveClass);
-    
-        const newLog: ActivityLog = {
-            id: `log-${Date.now()}`,
-            userId: 'all', // Broadcast to everyone
-            type: ActivityType.LiveClassStarted,
-            text: `${currentUser.name} has started a live class for ${subject.name}: "${title}". Join now!`,
-            timestamp: new Date(),
-            read: false,
-        };
-        setActivityLogs(prev => [newLog, ...prev]);
-    
-        addToast(`Live class "${title}" has started!`, 'success');
-    };
-    
-    const handleSelectPlan = (plan: SubscriptionPlan) => {
-        const prices = { [SubscriptionPlan.Daily]: 2000, [SubscriptionPlan.Weekly]: 10000, [SubscriptionPlan.Monthly]: 35000, [SubscriptionPlan.None]: 0 };
-        const amount = prices[plan];
-
-        setConfirmationState({
-            title: 'Confirm Subscription',
-            message: <p>Proceed to pay K{amount.toLocaleString()} for the {plan} plan?</p>,
-            onConfirm: () => executePayment(plan),
-            confirmText: 'Confirm & Pay'
-        });
-    };
-
-    const executePayment = (plan: SubscriptionPlan) => {
-        const prices = { [SubscriptionPlan.Daily]: 2000, [SubscriptionPlan.Weekly]: 10000, [SubscriptionPlan.Monthly]: 35000, [SubscriptionPlan.None]: 0 };
-        const durations = { [SubscriptionPlan.Daily]: 1, [SubscriptionPlan.Weekly]: 7, [SubscriptionPlan.Monthly]: 30, [SubscriptionPlan.None]: 0 };
-        
-        const amount = prices[plan];
-        const durationDays = durations[plan];
-
-        const newSubscription: StudentSubscription = {
-            plan,
-            startDate: new Date(),
-            endDate: new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000),
-        };
-        
-        if (pendingSignUp) {
-            const { name, email, pass } = pendingSignUp;
-            const newUser: User = { 
-                id: `user-${Date.now()}`, name, email, password: pass, role: Role.Student, 
-                profilePicture: `https://i.pravatar.cc/150?u=${Date.now()}`,
-                subscription: newSubscription
-            };
             setUsers(prev => [...prev, newUser]);
             setCurrentUser(newUser);
-
-            const newPayment: PaymentRecord = { id: `pay-${Date.now()}`, studentId: newUser.id, studentName: newUser.name, date: new Date(), amount, method: 'Airtel Money', plan };
-            setPayments(prev => [newPayment, ...prev]);
-            
-            const paymentLog: ActivityLog = { id: `log-${Date.now()}`, userId: APP_OWNER_ID, type: ActivityType.PaymentReceived, text: `Payment from ${newUser.name} (K${amount}) for ${plan} plan.`, timestamp: new Date(), read: false };
-            const enrollmentLog: ActivityLog = { id: `log-enroll-${Date.now()}`, userId: APP_OWNER_ID, type: ActivityType.NewEnrollment, text: `${newUser.name} created an account and subscribed.`, timestamp: new Date(), read: false };
-            setActivityLogs(prev => [paymentLog, enrollmentLog, ...prev]);
-            
-            setPaymentModalOpen(false);
-            setPendingSignUp(null);
-            addToast(`Welcome, ${name}! Your account is created with a ${plan} plan.`, 'success');
-
-        } else if (currentUser) {
-            const updatedUser = { ...currentUser, subscription: newSubscription };
-            setCurrentUser(updatedUser);
-            setUsers(users.map(u => u.id === currentUser.id ? updatedUser : u));
-
-            const newPayment: PaymentRecord = { id: `pay-${Date.now()}`, studentId: currentUser.id, studentName: currentUser.name, date: new Date(), amount, method: 'Airtel Money', plan };
-            setPayments(prev => [newPayment, ...prev]);
-            
-            const newLog: ActivityLog = { id: `log-${Date.now()}`, userId: APP_OWNER_ID, type: ActivityType.PaymentReceived, text: `Payment from ${currentUser.name} (K${amount}) for ${plan} plan.`, timestamp: new Date(), read: false };
-            setActivityLogs(prev => [newLog, ...prev]);
-            
-            setPaymentModalOpen(false);
-            addToast(`Payment successful! You now have ${plan} access.`, 'success');
+            addToast('Account created successfully!', 'success');
         }
-        setConfirmationState(null);
-    }
-
-
-    const handleLiveStreamTopUp = () => {
-        if (!currentUser || !pendingLiveClass) return;
-
-        setConfirmationState({
-            title: 'Confirm Live Class Fee',
-            message: <p>Confirm payment of K500 to join the live class: "{pendingLiveClass.title}"?</p>,
-            onConfirm: () => {
-                const updatedSubscription = { ...currentUser.subscription, liveClassAccessId: pendingLiveClass.id };
-                const updatedUser = { ...currentUser, subscription: updatedSubscription as StudentSubscription };
-                
-                setCurrentUser(updatedUser);
-                setUsers(users.map(u => u.id === currentUser.id ? updatedUser : u));
-
-                const newPayment: PaymentRecord = { id: `pay-${Date.now()}`, studentId: currentUser.id, studentName: currentUser.name, date: new Date(), amount: 500, method: 'TNM Mpamba', plan: 'LiveStreamTopUp' };
-                setPayments(prev => [newPayment, ...prev]);
-
-                const newLog: ActivityLog = { id: `log-${Date.now()}`, userId: APP_OWNER_ID, type: ActivityType.PaymentReceived, text: `${currentUser.name} paid K500 to join live class "${pendingLiveClass.title}".`, timestamp: new Date(), read: false };
-                setActivityLogs(prev => [newLog, ...prev]);
-                
-                setActiveLiveStream(pendingLiveClass);
-                addToast(`Payment successful! Joining ${pendingLiveClass.title}...`, 'success');
-                setPendingLiveClass(null);
-                setConfirmationState(null);
-            },
-            confirmText: 'Confirm & Pay K500'
-        })
     };
-    
-    const handleBuyBook = (book: Book) => {
-        if (!currentUser) return;
-        if (bookPurchases.some(p => p.studentId === currentUser.id && p.bookId === book.id)) {
-            addToast("You already own this book.", "info");
+
+    const handleEnroll = (subjectId: string) => {
+        if (!currentUser || currentUser.role !== Role.Student) return;
+        if (enrollments.some(e => e.studentId === currentUser.id && e.subjectId === subjectId)) {
+            addToast("You are already enrolled in this subject.", 'info');
             return;
         }
-        setConfirmationState({
-            title: 'Confirm Purchase',
-            message: <p>Are you sure you want to buy "{book.title}" for K{book.price.toLocaleString()}?</p>,
-            onConfirm: () => handleConfirmBookPurchase(book),
-            confirmText: 'Confirm & Pay'
-        });
-    };
 
-    const handleConfirmBookPurchase = (book: Book) => {
-        if (!currentUser) return;
+        const newEnrollment: Enrollment = { studentId: currentUser.id, subjectId };
+        setEnrollments(prev => [...prev, newEnrollment]);
 
-        const newPurchase: BookPurchase = { studentId: currentUser.id, bookId: book.id };
-        setBookPurchases(prev => [...prev, newPurchase]);
-
-        const newPayment: PaymentRecord = {
-            id: `pay-book-${Date.now()}`, studentId: currentUser.id, studentName: currentUser.name,
-            date: new Date(), amount: book.price, method: 'Airtel Money', plan: 'BookPurchase'
-        };
-        setPayments(prev => [newPayment, ...prev]);
-
-        const newLog: ActivityLog = {
-            id: `log-${Date.now()}`, userId: APP_OWNER_ID, type: ActivityType.NewBookPurchase,
-            text: `${currentUser.name} purchased the book: "${book.title}".`, timestamp: new Date(), read: false,
-        };
-        setActivityLogs(prev => [newLog, ...prev]);
-
-        addToast(`Successfully purchased "${book.title}"!`, 'success');
-        setConfirmationState(null);
-    };
-
-    const handleOpenBookReader = (book: Book) => {
-        if (!currentUser) return;
-        setSelectedBookToRead(book);
-
-        const hasReadBefore = bookReadings.some(r => r.studentId === currentUser.id && r.bookId === book.id);
-        
-        const newReading: BookReading = { studentId: currentUser.id, bookId: book.id, lastReadAt: new Date() };
-        setBookReadings(prev => [...prev.filter(r => !(r.studentId === currentUser.id && r.bookId === book.id)), newReading]);
-
-        if (!hasReadBefore) {
-            const newLog: ActivityLog = {
-                id: `log-${Date.now()}`, userId: APP_OWNER_ID, type: ActivityType.NewBookReading,
-                text: `${currentUser.name} started reading "${book.title}".`, timestamp: new Date(), read: false,
-            };
-            setActivityLogs(prev => [newLog, ...prev]);
+        const subject = subjects.find(s => s.id === subjectId);
+        if (subject) {
+            // Log for owner
+            const ownerLog: ActivityLog = { id: `log-${activityLogs.length + 1}`, userId: APP_OWNER_ID, type: ActivityType.NewEnrollment, text: `${currentUser.name} enrolled in ${subject.name}.`, timestamp: new Date(), read: false };
+            // Log for teacher
+            const teacherLog: ActivityLog = { id: `log-${activityLogs.length + 2}`, userId: subject.teacherId, type: ActivityType.NewEnrollmentInClass, text: `${currentUser.name} has enrolled in your ${subject.name} class.`, timestamp: new Date(), read: false };
+            setActivityLogs(prev => [...prev, ownerLog, teacherLog]);
+            addToast(`Successfully enrolled in ${subject.name}!`, 'success');
         }
+        goBack(); // Go back to dashboard after enrolling
     };
-
-
+    
     const handleToggleBookmark = (lessonId: string) => {
-        if (!currentUser) return;
-
-        const existingBookmarkIndex = bookmarks.findIndex(b => b.studentId === currentUser.id && b.lessonId === lessonId);
+        if (!currentUser || currentUser.role !== Role.Student) return;
         
-        if (existingBookmarkIndex > -1) {
-            setBookmarks(prev => prev.filter((_, index) => index !== existingBookmarkIndex));
+        const existingBookmark = bookmarks.find(b => b.studentId === currentUser.id && b.lessonId === lessonId);
+        
+        if (existingBookmark) {
+            setBookmarks(prev => prev.filter(b => !(b.studentId === currentUser.id && b.lessonId === lessonId)));
             addToast('Bookmark removed.', 'info');
         } else {
             const newBookmark: LessonBookmark = { studentId: currentUser.id, lessonId };
@@ -1996,812 +380,1276 @@ export const App: React.FC = () => {
             addToast('Lesson bookmarked!', 'success');
         }
     };
+    
+    const handleBuyBook = (bookId: string) => {
+        if (!currentUser || currentUser.role !== Role.Student) return;
+        const book = books.find(b => b.id === bookId);
+        if (!book) return;
 
-     const handleUploadLesson = (data: Omit<VideoLesson, 'id' | 'thumbnail'>) => {
-        if (!currentUser || currentUser.role !== Role.Teacher) return;
+        const newPurchase: BookPurchase = { studentId: currentUser.id, bookId };
+        setBookPurchases(prev => [...prev, newPurchase]);
 
-        const newLesson: VideoLesson = {
-            ...data,
-            id: `vl-${Date.now()}`,
-            thumbnail: `https://picsum.photos/seed/vl-${Date.now()}/400/225`,
-        };
-
-        setLessons(prev => [newLesson, ...prev]);
-
-        const subjectName = subjects.find(s => s.id === data.subjectId)?.name || 'a subject';
-        const newLog: ActivityLog = {
-            id: `log-${Date.now()}`,
-            userId: APP_OWNER_ID,
-            type: ActivityType.NewLesson,
-            text: `${currentUser.name} uploaded a new lesson for ${subjectName}: "${data.title}".`,
-            timestamp: new Date(),
-            read: false,
-        };
-        setActivityLogs(prev => [newLog, ...prev]);
-        addToast("New lesson uploaded successfully!", 'success');
-    };
-
-    const handleCreatePost = (data: { subjectId: string; type: PostType; text: string }) => {
-        if (!currentUser || currentUser.role !== Role.Teacher) return;
-        
-        const newPost: SubjectPost = {
-            id: `post-${Date.now()}`,
-            subjectId: data.subjectId,
-            teacherId: currentUser.id,
-            teacherName: currentUser.name,
-            teacherProfilePic: currentUser.profilePicture,
-            type: data.type,
-            text: data.text,
-            timestamp: new Date(),
-        };
-
-        setSubjectPosts(prev => [newPost, ...prev]);
-        addToast("Post created successfully!", 'success');
-    };
-
-    const handleAddComment = (postId: string, text: string) => {
-        if (!currentUser) return;
-        const newComment: PostComment = {
-            id: `comment-${Date.now()}`,
-            postId,
-            authorId: currentUser.id,
-            authorName: currentUser.name,
-            authorProfilePic: currentUser.profilePicture,
-            text,
-            timestamp: new Date(),
-        };
-        setPostComments(prev => [...prev, newComment]);
-
-        const post = subjectPosts.find(p => p.id === postId);
-        const postAuthor = users.find(u => u.id === post?.teacherId);
-        if (postAuthor && postAuthor.id !== currentUser.id) {
-            const log: ActivityLog = {
-                id: `log-${Date.now()}`,
-                userId: postAuthor.id,
-                type: ActivityType.NewCommentOnPostTeacher,
-                text: `${currentUser.name} commented on your post.`,
-                timestamp: new Date(),
-                read: false,
-            };
-            setActivityLogs(prev => [...prev, log]);
-        }
-    }
-
-    const handleSendMessage = (receiverId: string, text: string) => {
-        if(!currentUser) return;
-        const newMessage: DirectMessage = {
-            id: `dm-${Date.now()}`,
-            senderId: currentUser.id,
-            receiverId,
-            text,
-            timestamp: new Date(),
-        };
-        setDirectMessages(prev => [...prev, newMessage]);
-
-        const receiver = users.find(u => u.id === receiverId);
-        if(receiver) {
-            const log: ActivityLog = {
-                id: `log-dm-${Date.now()}`,
-                userId: receiverId,
-                type: ActivityType.NewDirectMessage,
-                text: `You have a new message from ${currentUser.name}.`,
-                timestamp: new Date(),
-                read: false
-            };
-            setActivityLogs(prev => [...prev, log]);
-        }
-    };
-
-    const handleMarkNotificationsRead = () => {
-        setActivityLogs(prev => prev.map(log => ({ ...log, read: true })));
-        addToast("Notifications marked as read.", "info");
-    };
-
-    const handleWithdrawal = (withdrawal: Omit<Withdrawal, 'id' | 'timestamp'>) => {
-        const newWithdrawal: Withdrawal = {
-            ...withdrawal,
-            id: `wd-${Date.now()}`,
-            timestamp: new Date()
-        };
-        setWithdrawals(prev => [newWithdrawal, ...prev]);
-        addToast(`Withdrawal of K${withdrawal.amount.toLocaleString()} to ${withdrawal.method} initiated.`, 'success');
-    }
-
-    // Examination Handlers
-    const handleStartExam = (exam: Examination) => {
-        setActiveExamState({
-            exam,
-            answers: {},
-            currentQuestionIndex: 0,
-            timeLeft: exam.durationMinutes * 60,
-        });
-        setCurrentView('takeExam');
-    };
-
-    const handleSelectExamAnswer = (questionId: string, answer: string) => {
-        if (!activeExamState) return;
-        setActiveExamState(prev => prev ? ({
-            ...prev,
-            answers: {
-                ...prev.answers,
-                [questionId]: answer
-            }
-        }) : null);
-    };
-
-    const handleSubmitExam = () => {
-        if (!activeExamState || !currentUser) return;
-
-        let score = 0;
-        const scoresBySubject: Record<string, { score: number; total: number }> = {};
-        
-        activeExamState.exam.questions.forEach(q => {
-            const subjectId = q.subjectId;
-            if (!scoresBySubject[subjectId]) {
-                scoresBySubject[subjectId] = { score: 0, total: 0 };
-            }
-            scoresBySubject[subjectId].total++;
-
-            if (activeExamState.answers[q.id] === q.correctAnswer) {
-                score++;
-                scoresBySubject[subjectId].score++;
-            }
-        });
-
-        const newAttempt: ExaminationAttempt = {
-            id: `exatt-${Date.now()}`,
+        const paymentRecord: PaymentRecord = {
+            id: `pay-${payments.length + 1}`,
             studentId: currentUser.id,
             studentName: currentUser.name,
-            examinationId: activeExamState.exam.id,
-            examinationTitle: activeExamState.exam.title,
-            answers: activeExamState.answers,
-            score,
-            totalQuestions: activeExamState.exam.questions.length,
-            scoresBySubject,
-            completedAt: new Date()
+            date: new Date(),
+            amount: book.price,
+            method: 'Wallet',
+            plan: 'BookPurchase'
         };
-
-        setExaminationAttempts(prev => [newAttempt, ...prev]);
-        setLastExamResult(newAttempt);
-        setActiveExamState(null);
-        setCurrentView('examResults');
-        
-        const newLog: ActivityLog = {
-            id: `log-exam-${Date.now()}`,
-            userId: APP_OWNER_ID,
-            type: ActivityType.ExaminationSubmission,
-            text: `${currentUser.name} scored ${score}/${newAttempt.totalQuestions} on "${newAttempt.examinationTitle}".`,
-            timestamp: new Date(),
-            read: false,
-        };
-        setActivityLogs(prev => [newLog, ...prev]);
+        setPayments(prev => [...prev, paymentRecord]);
+        addToast(`Successfully purchased ${book.title}!`, 'success');
     };
 
-    // ----- Modals and Panels -----
-    const ConfirmationModal: React.FC = () => {
-        if (!confirmationState) return null;
-        return (
-            <Modal isOpen={true} onClose={() => setConfirmationState(null)} title={confirmationState.title}>
-                <div className="space-y-4">
-                    <div className="text-slate-600 dark:text-slate-300">{confirmationState.message}</div>
-                    <div className="flex justify-end gap-3">
-                        <Button variant="secondary" onClick={() => setConfirmationState(null)}>Cancel</Button>
-                        <Button onClick={confirmationState.onConfirm}>{confirmationState.confirmText}</Button>
-                    </div>
-                </div>
-            </Modal>
-        );
-    }
+    const handleTutorSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!tutorInput.trim() || isTutorLoading) return;
     
-    const BookReaderModal: React.FC = () => {
-        if (!selectedBookToRead) return null;
-        return (
-            <Modal isOpen={true} onClose={() => setSelectedBookToRead(null)} title={selectedBookToRead.title}>
-                 <div className="space-y-4">
-                    <img src={selectedBookToRead.coverPhoto} alt={selectedBookToRead.title} className="w-full h-64 object-contain rounded-lg" />
-                    <p className="text-center font-semibold text-slate-700 dark:text-slate-200">by {selectedBookToRead.author}</p>
-                    <div className="p-4 bg-slate-100 dark:bg-slate-700 rounded-md text-slate-600 dark:text-slate-300">
-                        <p>The content of the book would be displayed here for in-app reading.</p>
-                        <p className="mt-2 text-sm italic">This feature prevents downloading and ensures content security.</p>
-                    </div>
-                 </div>
-            </Modal>
-        );
-    }
-
-    const SettingsModal: React.FC = () => {
-        if (!isSettingsModalOpen || !currentUser) return null;
-        const {status, plan} = getSubscriptionStatus(currentUser);
-
-        return (
-             <Modal isOpen={true} onClose={() => setSettingsModalOpen(false)} title="Settings">
-                 <div className="space-y-6">
-                     <div>
-                        <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2">Profile</h3>
-                        <div className="flex items-center gap-4 p-3 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                            <img src={currentUser.profilePicture} alt={currentUser.name} className="w-12 h-12 rounded-full object-cover" />
-                            <div>
-                                <p className="font-semibold text-slate-800 dark:text-slate-100">{currentUser.name}</p>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">{currentUser.email}</p>
-                            </div>
-                        </div>
-                     </div>
-
-                    {currentUser.role === Role.Student && (
-                        <div>
-                             <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2">My Subscription</h3>
-                              <div className="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                                <p>Status: <span className={`font-semibold ${status === 'Active' ? 'text-green-500' : 'text-red-500'}`}>{status}</span></p>
-                                <p>Plan: <span className="font-semibold">{plan}</span></p>
-                                {status === 'Active' && <p className="text-sm text-slate-500 dark:text-slate-400">Expires: {currentUser.subscription?.endDate.toLocaleDateString()}</p>}
-                                <Button onClick={() => { setSettingsModalOpen(false); setPaymentModalOpen(true); }} className="mt-3 w-full text-sm !py-2">Manage Subscription</Button>
-                              </div>
-                        </div>
-                    )}
-
-                    <div>
-                        <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2">Appearance & Sound</h3>
-                         <div className="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg divide-y dark:divide-slate-600">
-                             <div className="flex items-center justify-between py-2">
-                                <span>Theme</span>
-                                <div className="flex items-center gap-2">
-                                    <span>Light</span>
-                                    <button onClick={handleThemeToggle} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${theme === 'dark' ? 'bg-teal-600' : 'bg-slate-300'}`}>
-                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${theme === 'dark' ? 'translate-x-6' : 'translate-x-1'}`} />
-                                    </button>
-                                    <span>Dark</span>
-                                </div>
-                             </div>
-                             <div className="flex items-center justify-between py-2">
-                                <span>Background Music</span>
-                                <button onClick={toggleMusic} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600">
-                                    {isMusicPlaying ? <SpeakerWaveIcon className="w-6 h-6 text-teal-500"/> : <SpeakerXMarkIcon className="w-6 h-6 text-slate-500"/>}
-                                </button>
-                             </div>
-                         </div>
-                    </div>
-                     <Button variant="secondary" onClick={handleLogout} className="w-full">Logout</Button>
-                 </div>
-             </Modal>
-        );
-    }
+        const userMessage: ChatMessage = { sender: 'user', text: tutorInput, timestamp: new Date() };
+        setTutorChatMessages(prev => [...prev, userMessage]);
+        const currentInput = tutorInput;
+        setTutorInput('');
+        setIsTutorLoading(true);
     
-    const NotificationsPanel: React.FC = () => {
-        if (!isNotificationsPanelOpen) return null;
-        
-        const getLogIcon = (type: ActivityType) => {
-            const iconClass = "w-5 h-5";
-            switch (type) {
-                case ActivityType.NewEnrollment: return <UserGroupIcon className={`${iconClass} text-teal-500`} />;
-                case ActivityType.QuizSubmission: return <CheckCircleIcon className={`${iconClass} text-green-500`} />;
-                case ActivityType.NewLesson: return <VideoCameraIcon className={`${iconClass} text-purple-500`} />;
-                case ActivityType.LiveReminder: return <RssIcon className={`${iconClass} text-red-500`} />;
-                case ActivityType.PaymentReceived: return <WalletIcon className={`${iconClass} text-indigo-500`} />;
-                case ActivityType.NewDirectMessage: return <EnvelopeIcon className={`${iconClass} text-blue-500`} />;
-                case ActivityType.NewPostComment: return <ChatBubbleLeftRightIcon className={`${iconClass} text-yellow-500`} />;
-                default: return <InformationCircleIcon className={`${iconClass} text-slate-500`} />;
+        try {
+            const aiResponseText = await runAiTutor(currentInput);
+            const aiMessage: ChatMessage = { sender: 'ai', text: aiResponseText, timestamp: new Date() };
+            setTutorChatMessages(prev => [...prev, aiMessage]);
+        } catch (error) {
+            const errorMessage: ChatMessage = { sender: 'ai', text: "I'm having trouble connecting right now. Please try again later.", timestamp: new Date() };
+            setTutorChatMessages(prev => [...prev, errorMessage]);
+        } finally {
+            setIsTutorLoading(false);
+        }
+    };
+
+    const handleSubscriptionChange = (newPlan: SubscriptionPlan) => {
+        if (!currentUser || currentUser.role !== Role.Student) return;
+
+        const planDetails = PLANS.find(p => p.plan === newPlan);
+        if (!planDetails) {
+            addToast('Invalid subscription plan selected.', 'error');
+            return;
+        }
+
+        const newEndDate = new Date();
+        newEndDate.setDate(newEndDate.getDate() + planDetails.durationDays);
+
+        const updatedUser: User = {
+            ...currentUser,
+            subscription: {
+                plan: newPlan,
+                startDate: new Date(),
+                endDate: newEndDate,
             }
         };
 
+        setUsers(prevUsers => prevUsers.map(u => u.id === currentUser.id ? updatedUser : u));
+        setCurrentUser(updatedUser);
+
+        const newPayment: PaymentRecord = {
+            id: `pay-${payments.length + 1}`,
+            studentId: currentUser.id,
+            studentName: currentUser.name,
+            date: new Date(),
+            amount: planDetails.price,
+            method: 'Online',
+            plan: newPlan,
+        };
+        setPayments(prev => [newPayment, ...prev]);
+
+        addToast(`Successfully subscribed to the ${planDetails.name}!`, 'success');
+    };
+    
+    const handleCreateLesson = (lessonData: { title: string; description: string; subjectId: string; duration: string; difficulty: 'Beginner' | 'Intermediate' | 'Advanced' }) => {
+        if (!currentUser) return;
+        const newLesson: VideoLesson = {
+          id: `vl-${videoLessons.length + 1}`,
+          thumbnail: `https://picsum.photos/seed/vl-${videoLessons.length + 1}/400/225`,
+          chapters: [],
+          ...lessonData
+        };
+        setVideoLessons(prev => [...prev, newLesson]);
+        
+        const subject = subjects.find(s => s.id === lessonData.subjectId);
+        const newLog: ActivityLog = {
+          id: `log-${activityLogs.length + 1}`,
+          userId: currentUser.id,
+          type: ActivityType.NewLesson,
+          text: `${currentUser.name} uploaded a new lesson: "${lessonData.title}" in ${subject?.name}`,
+          timestamp: new Date(),
+          read: false
+        };
+        setActivityLogs(prev => [newLog, ...prev]);
+
+        addToast('New lesson uploaded successfully!', 'success');
+        setNewContentModal(null);
+    };
+    
+    const handleCreateLiveClass = (classData: { title: string; subjectId: string; startTime: Date }) => {
+        if (!currentUser) return;
+        const newClass: LiveClass = {
+          id: `lc-${liveClasses.length + 1}`,
+          teacherName: currentUser.name,
+          teacherId: currentUser.id,
+          ...classData
+        };
+        setLiveClasses(prev => [...prev, newClass]);
+        
+        const subject = subjects.find(s => s.id === classData.subjectId);
+        const reminderLog: ActivityLog = {
+          id: `log-${activityLogs.length + 1}`,
+          userId: 'all',
+          type: ActivityType.LiveReminder,
+          text: `New live class scheduled: "${classData.title}" in ${subject?.name}.`,
+          timestamp: new Date(),
+          read: false
+        };
+        setActivityLogs(prev => [reminderLog, ...prev]);
+        
+        addToast('Live class scheduled successfully!', 'success');
+        setNewContentModal(null);
+    };
+
+
+    // --- Component Rendering ---
+    
+     // A more complete header
+    const Header: React.FC = () => {
+        const title = currentPage.page === 'subject' ? subjects.find(s => s.id === currentPage.subjectId)?.name
+                    : currentPage.page === 'lesson' ? videoLessons.find(l => l.id === currentPage.lessonId)?.title
+                    : currentPage.page.charAt(0).toUpperCase() + currentPage.page.slice(1);
+
         return (
-            <div ref={notificationsRef} className="absolute top-16 right-4 w-80 max-w-sm bg-white dark:bg-slate-800 rounded-lg shadow-lg border dark:border-slate-700 z-30 animate-fade-in-up">
-                <div className="p-3 border-b dark:border-slate-700 flex justify-between items-center">
-                    <h3 className="font-bold text-slate-800 dark:text-slate-100">Notifications</h3>
-                    <button onClick={handleMarkNotificationsRead} className="text-sm text-teal-600 hover:underline disabled:text-slate-400" disabled={unreadNotifications === 0}>
-                        Mark all as read
+            <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-sm p-4 sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
+                <div className="flex items-center gap-4 flex-1">
+                    {navigationStack.length > 1 ? (
+                    <button onClick={goBack} className="text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400" aria-label="Go back">
+                        <ArrowLeftIcon className="w-6 h-6" />
+                    </button>
+                    ) : (
+                        <SmartLearnLogo className="w-8 h-8" />
+                    )}
+                    <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 hidden sm:block truncate">{title}</h1>
+                </div>
+                <div className="flex items-center gap-4">
+                    <div className="relative flex-grow max-w-xs md:max-w-sm">
+                        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+                        <input
+                            type="text"
+                            placeholder="Search..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-9 py-2 rounded-full border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        />
+                         {searchQuery && (
+                            <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                                <XCircleIcon className="w-5 h-5" />
+                            </button>
+                        )}
+                    </div>
+                    <button onClick={() => setIsNotificationsOpen(true)} className="text-slate-500 dark:text-slate-400 relative" aria-label="View notifications">
+                        <BellIcon className="w-6 h-6" />
+                        {activityLogs.filter(a => !a.read).length > 0 && <span className="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900"></span>}
+                    </button>
+                    <div className="relative">
+                        <button onClick={() => setIsProfileMenuOpen(p => !p)} className="text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400" aria-label="Open profile menu">
+                            {currentUser?.profilePicture ? <img src={currentUser.profilePicture} alt={currentUser.name} className="w-8 h-8 rounded-full object-cover" /> : <UserCircleIcon className="w-8 h-8" />}
+                        </button>
+                    </div>
+                </div>
+            </header>
+        );
+    };
+
+    const ProfileMenu = () => (
+        <div ref={profileMenuRef} className="absolute top-16 right-4 w-64 bg-white dark:bg-slate-800 rounded-lg shadow-xl border dark:border-slate-700 z-30 animate-fade-in-up">
+            <div className="p-4 border-b dark:border-slate-700">
+                <p className="font-semibold">{currentUser?.name}</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{currentUser?.email}</p>
+            </div>
+            <div className="p-2">
+                 <button onClick={() => { navigate('profile'); setIsProfileMenuOpen(false); }} className="w-full text-left p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2">
+                    <UserCircleIcon className="w-5 h-5" /> My Profile
+                </button>
+                <div className="flex items-center justify-between p-2 rounded-md">
+                    <span className="text-sm font-medium">Dark Mode</span>
+                    <button onClick={handleToggleTheme} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isDarkMode ? 'bg-teal-600' : 'bg-slate-200'}`}>
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isDarkMode ? 'translate-x-6' : 'translate-x-1'}`} />
                     </button>
                 </div>
-                <div className="max-h-96 overflow-y-auto">
-                    {activityLogs.sort((a,b) => b.timestamp.getTime() - a.timestamp.getTime()).map(log => (
-                        <div key={log.id} className={`p-3 border-b dark:border-slate-700 flex items-start gap-3 ${!log.read ? 'bg-teal-50 dark:bg-teal-900/20' : ''}`}>
-                            <div className="bg-slate-100 dark:bg-slate-700 p-2 rounded-full mt-1">{getLogIcon(log.type)}</div>
-                            <div>
-                                <p className="text-sm text-slate-700 dark:text-slate-200">{log.text}</p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">{log.timestamp.toLocaleString()}</p>
-                            </div>
-                        </div>
-                    ))}
+                <div className="flex items-center justify-between p-2 rounded-md">
+                    <span className="text-sm font-medium">Music</span>
+                    <button onClick={() => setIsMusicPlaying(p => !p)} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isMusicPlaying ? 'bg-teal-600' : 'bg-slate-200'}`}>
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isMusicPlaying ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
                 </div>
             </div>
-        )
-    }
+            <div className="p-2 border-t dark:border-slate-700">
+                <Button onClick={handleLogout} variant="secondary" className="w-full !py-2 !font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50">
+                    Logout
+                </Button>
+            </div>
+        </div>
+    );
+    
+    const StudentDashboard: React.FC<{
+        currentUser: User;
+        enrollments: Enrollment[];
+        subjects: Subject[];
+        videoLessons: VideoLesson[];
+        liveClasses: LiveClass[];
+        lessonCompletions: LessonCompletion[];
+        bookmarks: LessonBookmark[];
+        navigate: (page: string, params?: any) => void;
+    }> = ({ currentUser, enrollments, subjects, videoLessons, liveClasses, lessonCompletions, bookmarks, navigate }) => {
+        const [quote, setQuote] = useState("Loading your daily inspiration...");
+        const [recommendedLessons, setRecommendedLessons] = useState<VideoLesson[]>([]);
 
-    // ----- Examination Views -----
-    const ExaminationsView: React.FC = () => {
-        if (!currentUser) return null;
-        const myAttempts = examinationAttempts.filter(a => a.studentId === currentUser.id);
+        useEffect(() => {
+            getMotivationalQuote().then(setQuote);
+        }, []);
+
+        useEffect(() => {
+            const fetchRecommendations = async () => {
+                const enrolledSubjectIds = enrollments.map(e => e.subjectId);
+                const completedLessonIds = lessonCompletions.map(c => c.lessonId);
+                const allLessonInfo = videoLessons.map(l => ({ id: l.id, title: l.title, subjectId: l.subjectId }));
+                const recommendedIds = await getRecommendedLessons(enrolledSubjectIds, allLessonInfo, completedLessonIds);
+                const recommended = videoLessons.filter(lesson => recommendedIds.includes(lesson.id));
+                setRecommendedLessons(recommended);
+            };
+
+            if (enrollments.length > 0) {
+                fetchRecommendations();
+            }
+        }, [enrollments, videoLessons, lessonCompletions]);
+
+        const mySubjects = subjects.filter(subject => enrollments.some(e => e.subjectId === subject.id));
+        const upcomingClasses = liveClasses
+            .filter(lc => mySubjects.some(s => s.id === lc.subjectId) && lc.startTime > new Date())
+            .sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
+            .slice(0, 3);
+        
+        const lastCompleted = lessonCompletions.sort((a,b) => b.completedAt.getTime() - a.completedAt.getTime())[0];
+        let continueLearningLesson: VideoLesson | null = null;
+        if (lastCompleted) {
+            const lastLesson = videoLessons.find(l => l.id === lastCompleted.lessonId);
+            if (lastLesson) {
+                const lessonsInSameSubject = videoLessons.filter(l => l.subjectId === lastLesson.subjectId);
+                const lastLessonIndex = lessonsInSameSubject.findIndex(l => l.id === lastLesson.id);
+                if (lastLessonIndex < lessonsInSameSubject.length - 1) {
+                    continueLearningLesson = lessonsInSameSubject[lastLessonIndex + 1];
+                }
+            }
+        } else if (mySubjects.length > 0) {
+            continueLearningLesson = videoLessons.find(l => l.subjectId === mySubjects[0].id) || null;
+        }
+        
+        const myBookmarks = bookmarks
+            .map(b => videoLessons.find(l => l.id === b.lessonId))
+            .filter((l): l is VideoLesson => l !== undefined);
+
+        const DashboardSection: React.FC<{ title: string; icon?: React.ReactNode; children: React.ReactNode; }> = ({ title, icon, children }) => (
+            <section className="animate-fade-in-up">
+                <div className="flex items-center gap-2 mb-4">
+                    {icon}
+                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">{title}</h2>
+                </div>
+                {children}
+            </section>
+        );
 
         return (
-            <div className="p-4 animate-fade-in-up space-y-6">
-                 <div className="text-center">
-                    <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Examination Center</h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1">Test your knowledge and review your results.</p>
+            <div className="p-4 sm:p-6 space-y-8">
+                <div className="bg-gradient-to-r from-teal-500 to-cyan-500 p-6 rounded-2xl text-white shadow-lg animate-fade-in-up">
+                    <h1 className="text-2xl sm:text-3xl font-bold">Hello, {currentUser.name.split(' ')[0]}!</h1>
+                    <p className="mt-2 text-teal-100 italic">"{quote}"</p>
                 </div>
-                <div>
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Available Examinations</h2>
-                    {EXAMINATIONS.map(exam => (
-                        <div key={exam.id} className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-md flex items-center justify-between">
-                            <div>
-                                <h3 className="font-bold text-lg">{exam.title}</h3>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">{exam.questions.length} Questions | {exam.durationMinutes} Minutes</p>
+
+                {continueLearningLesson && (
+                    <DashboardSection title="Continue Learning" icon={<PlayIcon className="w-6 h-6 text-teal-500" />}>
+                         <div onClick={() => navigate('lesson', { lessonId: continueLearningLesson?.id })} className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-4 flex flex-col sm:flex-row items-center gap-4 hover-lift cursor-pointer">
+                            <img src={continueLearningLesson.thumbnail} alt={continueLearningLesson.title} className="w-full sm:w-40 h-auto object-cover rounded-lg" />
+                            <div className="flex-1">
+                                <p className="text-sm text-slate-500 dark:text-slate-400">{subjects.find(s => s.id === continueLearningLesson?.subjectId)?.name}</p>
+                                <h3 className="text-lg font-bold mt-1">{continueLearningLesson.title}</h3>
+                                <p className="text-sm text-slate-600 dark:text-slate-300 mt-2 line-clamp-2">{continueLearningLesson.description}</p>
                             </div>
-                            <Button onClick={() => handleStartExam(exam)}>Start Exam</Button>
+                            <Button className="mt-4 sm:mt-0 self-start sm:self-center">Start Lesson</Button>
                         </div>
-                    ))}
-                </div>
-                <div>
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">My Past Attempts</h2>
-                    {myAttempts.length > 0 ? (
-                        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm space-y-3">
-                            {myAttempts.sort((a,b) => b.completedAt.getTime() - a.completedAt.getTime()).map(attempt => {
-                                const percentage = Math.round((attempt.score / attempt.totalQuestions) * 100);
-                                return (
-                                    <div key={attempt.id} className="flex justify-between items-center border-b dark:border-slate-700 pb-2 last:border-b-0">
-                                        <div>
-                                            <p className="font-semibold">{attempt.examinationTitle}</p>
-                                            <p className="text-xs text-slate-500">{attempt.completedAt.toLocaleString()}</p>
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-lg text-right">{percentage}%</p>
-                                            <p className="text-sm text-slate-500 text-right">{attempt.score}/{attempt.totalQuestions} Correct</p>
-                                        </div>
+                    </DashboardSection>
+                )}
+
+                <DashboardSection title="My Subjects" icon={<AcademicCapIcon className="w-6 h-6 text-teal-500" />}>
+                    {mySubjects.length > 0 ? (
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            {mySubjects.map(subject => (
+                                <div key={subject.id} onClick={() => navigate('subject', { subjectId: subject.id })} className="bg-white dark:bg-slate-800 rounded-xl shadow-md overflow-hidden hover-lift cursor-pointer">
+                                    <img src={subject.coverPhoto} alt={subject.name} className="h-24 w-full object-cover" />
+                                    <div className="p-4">
+                                        <h3 className="font-bold truncate">{subject.name}</h3>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">{subject.teacherName}</p>
                                     </div>
-                                )
-                            })}
+                                </div>
+                            ))}
                         </div>
                     ) : (
-                         <p className="text-center text-slate-500 dark:text-slate-400 py-4">You have not attempted any examinations yet.</p>
+                        <div className="text-center py-8 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                            <p className="text-slate-500 dark:text-slate-400">You are not enrolled in any subjects yet.</p>
+                            <Button className="mt-4" onClick={() => navigate('exploreSubjects')}>Explore Subjects</Button>
+                        </div>
+                    )}
+                </DashboardSection>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {upcomingClasses.length > 0 && (
+                        <DashboardSection title="Upcoming Live Classes" icon={<VideoCameraIcon className="w-6 h-6 text-teal-500" />}>
+                            <div className="space-y-3">
+                                {upcomingClasses.map(lc => (
+                                    <div key={lc.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-4 flex items-center gap-4">
+                                        <div className="p-3 bg-teal-100 dark:bg-teal-900/50 rounded-lg">
+                                            <CalendarDaysIcon className="w-6 h-6 text-teal-600 dark:text-teal-400" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold">{lc.title}</h3>
+                                            <p className="text-sm text-slate-500 dark:text-slate-400">{lc.teacherName} &bull; {subjects.find(s=>s.id === lc.subjectId)?.name}</p>
+                                            <p className="text-xs text-teal-600 dark:text-teal-400 font-semibold mt-1">{lc.startTime.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </DashboardSection>
+                    )}
+
+                    {myBookmarks.length > 0 && (
+                        <DashboardSection title="My Bookmarks" icon={<BookmarkIcon className="w-6 h-6 text-teal-500" />}>
+                            <div className="space-y-3">
+                                {myBookmarks.map(lesson => (
+                                    <div key={lesson.id} onClick={() => navigate('lesson', { lessonId: lesson.id })} className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-3 flex items-center gap-3 hover-lift cursor-pointer">
+                                        <img src={lesson.thumbnail} alt={lesson.title} className="w-24 h-16 object-cover rounded-md"/>
+                                        <div className="flex-1">
+                                            <h3 className="font-semibold line-clamp-2">{lesson.title}</h3>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">{subjects.find(s => s.id === lesson.subjectId)?.name}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </DashboardSection>
+                    )}
+
+                    {recommendedLessons.length > 0 && !myBookmarks.length && (
+                         <DashboardSection title="Recommended For You" icon={<LightBulbIcon className="w-6 h-6 text-teal-500" />}>
+                            <div className="space-y-3">
+                                {recommendedLessons.map(lesson => (
+                                    <div key={lesson.id} onClick={() => navigate('lesson', { lessonId: lesson.id })} className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-3 flex items-center gap-3 hover-lift cursor-pointer">
+                                        <img src={lesson.thumbnail} alt={lesson.title} className="w-24 h-16 object-cover rounded-md"/>
+                                        <div className="flex-1">
+                                            <h3 className="font-semibold line-clamp-2">{lesson.title}</h3>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">{subjects.find(s => s.id === lesson.subjectId)?.name}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </DashboardSection>
                     )}
                 </div>
             </div>
         );
     };
 
-    const TakeExaminationView: React.FC = () => {
-        // FIX: Changed NodeJS.Timeout to number for browser compatibility.
-        const timerRef = useRef<number>();
-
-        useEffect(() => {
-            timerRef.current = window.setInterval(() => {
-                setActiveExamState(prev => {
-                    if (prev && prev.timeLeft > 0) {
-                        return { ...prev, timeLeft: prev.timeLeft - 1 };
-                    }
-                    if (prev && prev.timeLeft <= 1) {
-                        handleSubmitExam();
-                    }
-                    return prev;
-                });
-            }, 1000);
-            return () => clearInterval(timerRef.current);
-        }, []);
-        
-        if (!activeExamState) return <div>Error starting exam.</div>;
-
-        const { exam, answers, currentQuestionIndex, timeLeft } = activeExamState;
-        const currentQuestion = exam.questions[currentQuestionIndex];
-        const progress = ((currentQuestionIndex + 1) / exam.questions.length) * 100;
-        
-        const goToQuestion = (index: number) => {
-            setActiveExamState(prev => prev ? ({ ...prev, currentQuestionIndex: index }) : null);
-        };
-
+    const ExploreSubjectsScreen: React.FC<{
+        allSubjects: Subject[];
+        studentEnrollments: Enrollment[];
+        onEnroll: (subjectId: string) => void;
+    }> = ({ allSubjects, studentEnrollments, onEnroll }) => {
         return (
-            <div className="p-4 animate-fade-in-up">
-                 <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
-                    <div className="flex justify-between items-center border-b dark:border-slate-700 pb-4 mb-4">
-                        <div>
-                            <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{exam.title}</h1>
-                            <p className="text-slate-500">Question {currentQuestionIndex + 1} of {exam.questions.length}</p>
-                        </div>
-                        <div className="text-center">
-                            <p className="text-slate-500 text-sm">Time Left</p>
-                            <p className="text-2xl font-bold text-red-500">{formatTime(timeLeft)}</p>
-                        </div>
-                    </div>
-                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 mb-6">
-                        <div className="bg-teal-600 h-2.5 rounded-full" style={{ width: `${progress}%` }}></div>
-                    </div>
-
-                    <div>
-                        <h2 className="text-lg font-semibold mb-4 text-slate-900 dark:text-slate-100">{currentQuestion.questionText}</h2>
-                        <div className="space-y-3">
-                            {currentQuestion.options.map(option => (
-                                <label key={option} className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-colors ${answers[currentQuestion.id] === option ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/50' : 'border-slate-300 dark:border-slate-600 hover:border-teal-400'}`}>
-                                    <input type="radio" name={currentQuestion.id} value={option} checked={answers[currentQuestion.id] === option} onChange={() => handleSelectExamAnswer(currentQuestion.id, option)} className="w-4 h-4 text-teal-600 bg-slate-100 border-slate-300 focus:ring-teal-500 dark:focus:ring-teal-600 dark:ring-offset-slate-800 focus:ring-2 dark:bg-slate-700 dark:border-slate-600" />
-                                    <span className="ml-3 text-slate-700 dark:text-slate-200">{option}</span>
-                                </label>
-                            ))}
-                        </div>
-                    </div>
-                    
-                    <div className="flex justify-between mt-8">
-                        <Button variant="secondary" onClick={() => goToQuestion(currentQuestionIndex - 1)} disabled={currentQuestionIndex === 0}>Previous</Button>
-                        {currentQuestionIndex === exam.questions.length - 1 ? (
-                             <Button onClick={handleSubmitExam} className="!bg-green-600 hover:!bg-green-700 focus:!ring-green-300">Submit Exam</Button>
-                        ) : (
-                             <Button onClick={() => goToQuestion(currentQuestionIndex + 1)}>Next</Button>
-                        )}
-                    </div>
-                 </div>
+            <div className="p-4 sm:p-6">
+                <h2 className="text-3xl font-bold mb-6">Explore Subjects</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {allSubjects.map(subject => {
+                        const isEnrolled = studentEnrollments.some(e => e.subjectId === subject.id);
+                        return (
+                            <div key={subject.id} className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg overflow-hidden flex flex-col">
+                                <img src={subject.coverPhoto} alt={subject.name} className="h-40 w-full object-cover" />
+                                <div className="p-4 flex flex-col flex-grow">
+                                    <h3 className="text-xl font-bold">{subject.name}</h3>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">by {subject.teacherName}</p>
+                                    <p className="text-sm mt-2 flex-grow text-slate-600 dark:text-slate-300">{subject.description}</p>
+                                    <div className="mt-4">
+                                        {isEnrolled ? (
+                                            <Button variant="secondary" disabled className="w-full opacity-70 cursor-not-allowed flex items-center justify-center gap-2">
+                                                <CheckCircleIcon className="w-5 h-5" />
+                                                Enrolled
+                                            </Button>
+                                        ) : (
+                                            <Button onClick={() => onEnroll(subject.id)} className="w-full">
+                                                Enroll Now
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
         );
     };
 
-    const ExaminationResultsView: React.FC = () => {
-        if (!lastExamResult) return <div>No result to display.</div>;
-        const { score, totalQuestions, scoresBySubject } = lastExamResult;
-        const percentage = Math.round((score / totalQuestions) * 100);
-        const passed = percentage >= 50;
+
+    const TeacherDashboard: React.FC = () => {
+        const mySubjects = subjects.filter(s => s.teacherId === currentUser?.id);
+        const myStudentsCount = enrollments.filter(e => mySubjects.some(s => s.id === e.subjectId)).map(e => e.studentId).filter((v, i, a) => a.indexOf(v) === i).length;
         
         return (
-             <div className="p-4 animate-fade-in-up">
-                 <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 text-center">
-                    <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-2">Examination Results</h1>
-                    <p className="text-slate-500 mb-6">{lastExamResult.examinationTitle}</p>
-
-                    <div className={`w-32 h-32 rounded-full mx-auto flex items-center justify-center ${passed ? 'bg-green-100 dark:bg-green-900/50' : 'bg-red-100 dark:bg-red-900/50'}`}>
-                        <div className={`w-28 h-28 rounded-full bg-white dark:bg-slate-800 flex flex-col items-center justify-center`}>
-                           <span className={`text-4xl font-bold ${passed ? 'text-green-600' : 'text-red-600'}`}>{percentage}%</span>
-                           <span className="text-sm text-slate-500">{score}/{totalQuestions} Correct</span>
-                        </div>
+             <div className="p-4 sm:p-6 space-y-6">
+                 <div>
+                    <h2 className="text-3xl font-bold">Teacher Dashboard</h2>
+                    <p className="text-slate-500 dark:text-slate-400">Manage your subjects and students.</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-white">
+                    <StatCard icon={<AcademicCapIcon />} title="My Subjects" value={mySubjects.length} gradient="bg-gradient-to-br from-purple-500 to-violet-600" />
+                    <StatCard icon={<UsersIcon />} title="My Students" value={myStudentsCount} gradient="bg-gradient-to-br from-blue-500 to-indigo-600" />
+                </div>
+                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm">
+                    <h3 className="text-xl font-semibold mb-4">Create Content</h3>
+                    <div className="flex gap-4">
+                        <Button onClick={() => setNewContentModal({type: 'lesson', subjectId: null})} className="w-full flex items-center justify-center gap-2">
+                            <CloudArrowUpIcon className="w-5 h-5" /> Upload Lesson
+                        </Button>
+                        <Button onClick={() => setNewContentModal({type: 'class', subjectId: null})} variant="secondary" className="w-full flex items-center justify-center gap-2">
+                            <VideoCameraIcon className="w-5 h-5" /> Schedule Class
+                        </Button>
                     </div>
-
-                     <p className={`text-2xl font-bold mt-4 ${passed ? 'text-green-600' : 'text-red-600'}`}>
-                        {passed ? 'Congratulations, you passed!' : 'Better luck next time.'}
-                     </p>
-                     
-                     <div className="text-left mt-8">
-                        <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Score by Subject</h3>
-                        <div className="space-y-3">
-                            {/* FIX: Cast result to the correct type to resolve property access errors. */}
-                            {Object.entries(scoresBySubject).map(([subjectId, result]) => {
-                                const subject = subjects.find(s => s.id === subjectId);
-                                const subjectResult = result as { score: number; total: number };
-                                const subjectPercentage = Math.round((subjectResult.score / subjectResult.total) * 100);
-                                return (
-                                    <div key={subjectId}>
-                                        <div className="flex justify-between items-center mb-1">
-                                            <span className="font-semibold">{subject?.name || 'Unknown Subject'}</span>
-                                            <span>{subjectResult.score}/{subjectResult.total}</span>
-                                        </div>
-                                        <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5">
-                                            <div className="bg-teal-600 h-2.5 rounded-full" style={{ width: `${subjectPercentage}%` }}></div>
-                                        </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                     </div>
-
-                     <Button onClick={() => setCurrentView('examinations')} className="mt-8">Back to Examinations</Button>
-                 </div>
+                </div>
+                 <div>
+                    <h3 className="text-xl font-bold mb-4">My Subjects</h3>
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {mySubjects.map(subject => (
+                            <div key={subject.id} onClick={() => navigate('subject', { subjectId: subject.id })} className="bg-white dark:bg-slate-800 rounded-xl shadow-md overflow-hidden hover-lift cursor-pointer">
+                                <img src={subject.coverPhoto} alt={subject.name} className="h-24 w-full object-cover" />
+                                <div className="p-4">
+                                    <h3 className="font-bold truncate">{subject.name}</h3>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">{enrollments.filter(e => e.subjectId === subject.id).length} Students</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
              </div>
         )
     };
+    const OwnerDashboard: React.FC = () => {
+        const [ownerTab, setOwnerTab] = useState('overview');
+        const [userSubTab, setUserSubTab] = useState<'students' | 'teachers' | 'applications'>('students');
+        const [platformBalance, setPlatformBalance] = useState(500000);
+        const [isWithdrawalModalOpen, setIsWithdrawalModalOpen] = useState(false);
+        const [isUserDetailsModalOpen, setIsUserDetailsModalOpen] = useState<User | null>(null);
+        const [isAppDetailsModalOpen, setIsAppDetailsModalOpen] = useState<User | null>(null);
+        
+        const recentLogs = activityLogs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()).slice(0, 5);
+        const teacherApplications = users.filter(u => u.role === Role.Teacher && u.teacherApplication?.status === 'Pending');
 
-    const LiveStreamView: React.FC = () => {
-        const videoRef = useRef<HTMLVideoElement>(null);
-        const streamRef = useRef<MediaStream | null>(null);
-        const [isScreenSharing, setIsScreenSharing] = useState(false);
-        const [error, setError] = useState('');
-        const [quality, setQuality] = useState('720p');
-    
-        const startStream = async (constraints: MediaStreamConstraints) => {
-            try {
-                // Stop any existing stream
-                if (streamRef.current) {
-                    streamRef.current.getTracks().forEach(track => track.stop());
-                }
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
-                if (videoRef.current) {
-                    videoRef.current.srcObject = stream;
-                }
-                streamRef.current = stream;
-                setError('');
-            } catch (err) {
-                console.error("Error accessing media devices.", err);
-                setError('Could not access camera/microphone. Please check permissions.');
-            }
+        const handleApproveTeacher = (teacherId: string) => {
+            setUsers(users.map(u => u.id === teacherId ? { ...u, teacherApplication: { ...u.teacherApplication!, status: 'Approved' } } : u));
+            addToast('Teacher application approved.', 'success');
         };
 
-        const handleQualityChange = (newQuality: string) => {
-            setQuality(newQuality);
-            const constraints = {
-                '8k': { width: { ideal: 7680 }, height: { ideal: 4320 } },
-                '4k': { width: { ideal: 3840 }, height: { ideal: 2160 } },
-                '1440p': { width: { ideal: 2560 }, height: { ideal: 1440 } },
-                '1080p': { width: { ideal: 1920 }, height: { ideal: 1080 } },
-                '720p': { width: { ideal: 1280 }, height: { ideal: 720 } },
-                '480p': { width: { ideal: 854 }, height: { ideal: 480 } },
-                '360p': { width: { ideal: 640 }, height: { ideal: 360 } },
-            };
-            startStream({
-                video: { ...(constraints[newQuality as keyof typeof constraints]), facingMode: 'user' },
-                audio: true,
-            });
-        }
-    
-        useEffect(() => {
-            handleQualityChange('720p'); // Start with default quality
-            return () => {
-                if (streamRef.current) {
-                    streamRef.current.getTracks().forEach(track => track.stop());
-                }
-            };
-        }, []);
-    
-        const toggleScreenShare = async () => {
-            if (isScreenSharing) {
-                handleQualityChange(quality); // Go back to camera
-                setIsScreenSharing(false);
-            } else {
-                try {
-                    const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-                    if (videoRef.current) {
-                        videoRef.current.srcObject = screenStream;
-                    }
-                    // When the user stops sharing via browser UI
-                    screenStream.getVideoTracks()[0].onended = () => {
-                        handleQualityChange(quality);
-                        setIsScreenSharing(false);
-                    };
-                    setIsScreenSharing(true);
-                } catch (err) {
-                    console.error("Screen share error", err);
-                    addToast("Could not start screen sharing.", "error");
-                }
-            }
+        const handleRejectTeacher = (teacherId: string) => {
+             setUsers(users.map(u => u.id === teacherId ? { ...u, teacherApplication: { ...u.teacherApplication!, status: 'Rejected' } } : u));
+            addToast('Teacher application rejected.', 'error');
         };
-    
-        if (!activeLiveStream) return null;
-        const isTeacher = currentUser?.role === Role.Teacher;
-    
+
+        const handleWithdrawal = (amount: number, method: Withdrawal['method'], details: any) => {
+            const newWithdrawal: Withdrawal = {
+                id: `wd-${withdrawals.length + 1}`,
+                amount,
+                method,
+                timestamp: new Date(),
+                ...details
+            };
+            setWithdrawals(prev => [newWithdrawal, ...prev]);
+            setPlatformBalance(prev => prev - amount);
+            addToast(`Withdrawal of K${amount.toLocaleString()} successful.`, 'success');
+            setIsWithdrawalModalOpen(false);
+        };
+        
+        const TabButton: React.FC<{active: boolean, onClick: () => void, children: React.ReactNode, count?: number}> = ({active, onClick, children, count}) => (
+            <button onClick={onClick} className={`whitespace-nowrap pb-3 px-4 border-b-2 font-medium text-sm transition-colors ${active ? 'border-teal-500 text-teal-600 dark:text-teal-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600'}`}>
+                {children} {typeof count !== 'undefined' && <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${active ? 'bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>{count}</span>}
+            </button>
+        );
+
+        const activityIcons: { [key in ActivityType]?: React.ReactElement } = {
+            [ActivityType.NewEnrollment]: <UserGroupIcon className="w-5 h-5 text-blue-500" />,
+            [ActivityType.NewEnrollmentInClass]: <UserGroupIcon className="w-5 h-5 text-blue-500" />,
+            [ActivityType.PaymentReceived]: <BanknotesIcon className="w-5 h-5 text-green-500" />,
+            [ActivityType.NewLesson]: <BookOpenIcon className="w-5 h-5 text-purple-500" />,
+            [ActivityType.QuizSubmission]: <ClipboardDocumentCheckIcon className="w-5 h-5 text-indigo-500" />,
+            [ActivityType.LiveReminder]: <VideoCameraIcon className="w-5 h-5 text-red-500" />,
+            [ActivityType.TeacherApplication]: <BriefcaseIcon className="w-5 h-5 text-amber-500" />,
+        };
+        
         return (
-            <div className="p-4 animate-fade-in-up">
-                <div className="bg-slate-900 text-white rounded-xl shadow-2xl overflow-hidden">
-                    <div className="aspect-video bg-black flex items-center justify-center">
-                        {error ? <p className="text-red-400">{error}</p> : <video ref={videoRef} className="w-full h-full" autoPlay playsInline muted={isTeacher}></video>}
-                    </div>
-                    <div className="p-4 bg-slate-800/50">
-                        <div className="flex justify-between items-center">
-                            <div>
-                                <h2 className="text-xl font-bold">{activeLiveStream.title}</h2>
-                                <p className="text-sm text-slate-300">{activeLiveStream.teacherName}</p>
-                            </div>
-                            <div className="flex items-center gap-2 px-3 py-1 bg-red-600 rounded-full text-sm font-bold">
-                                <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span></span>
-                                LIVE
-                            </div>
+            <div className="p-4 sm:p-6 space-y-6">
+                 {isWithdrawalModalOpen && <WithdrawalModal balance={platformBalance} onClose={() => setIsWithdrawalModalOpen(false)} onSubmit={handleWithdrawal} />}
+                 {isUserDetailsModalOpen && <UserDetailsModal user={isUserDetailsModalOpen} onClose={() => setIsUserDetailsModalOpen(null)} />}
+                 {isAppDetailsModalOpen && <ApplicationDetailsModal applicant={isAppDetailsModalOpen} onClose={() => setIsAppDetailsModalOpen(null)} />}
+
+                <div>
+                    <h2 className="text-3xl font-bold">Owner Dashboard</h2>
+                    <p className="text-slate-500 dark:text-slate-400">Welcome, {currentUser?.name}. Here's an overview of your platform.</p>
+                </div>
+
+                <div className="border-b border-slate-200 dark:border-slate-700">
+                    <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+                        <TabButton active={ownerTab === 'overview'} onClick={() => setOwnerTab('overview')}>Overview</TabButton>
+                        <TabButton active={ownerTab === 'users'} onClick={() => setOwnerTab('users')} count={teacherApplications.length}>User Management</TabButton>
+                        <TabButton active={ownerTab === 'finances'} onClick={() => setOwnerTab('finances')}>Finances</TabButton>
+                    </nav>
+                </div>
+
+                {ownerTab === 'overview' && (
+                     <div className="space-y-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 text-white">
+                            <StatCard icon={<UsersIcon />} title="Total Students" value={users.filter(u=>u.role === Role.Student).length} gradient="bg-gradient-to-br from-blue-500 to-indigo-600" />
+                            <StatCard icon={<BriefcaseIcon />} title="Total Teachers" value={users.filter(u=>u.role === Role.Teacher && u.teacherApplication?.status === 'Approved').length} gradient="bg-gradient-to-br from-green-500 to-emerald-600" />
+                             <StatCard icon={<BanknotesIcon />} title="Platform Balance" value={`K${platformBalance.toLocaleString()}`} gradient="bg-gradient-to-br from-amber-500 to-orange-600" />
+                            <StatCard icon={<AcademicCapIcon />} title="Total Subjects" value={subjects.length} gradient="bg-gradient-to-br from-purple-500 to-violet-600" />
+                             <StatCard icon={<DocumentTextIcon />} title="Pending Apps" value={teacherApplications.length} gradient="bg-gradient-to-br from-pink-500 to-rose-600" />
                         </div>
-                         {isTeacher && (
-                            <div className="mt-4 pt-4 border-t border-slate-700 flex items-center justify-center gap-4">
-                                <Button onClick={toggleScreenShare} variant='secondary' className="!bg-blue-600 hover:!bg-blue-700 !text-white">{isScreenSharing ? 'Stop Sharing' : 'Share Screen'}</Button>
-                                <select value={quality} onChange={e => handleQualityChange(e.target.value)} className="bg-slate-700 text-white rounded-full px-4 py-3 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-teal-500">
-                                    <option value="360p">360p (SD)</option>
-                                    <option value="480p">480p</option>
-                                    <option value="720p">720p (HD)</option>
-                                    <option value="1080p">1080p (FHD)</option>
-                                    <option value="1440p">1440p (2K)</option>
-                                    <option value="2160p">2160p (4K)</option>
-                                    <option value="4320p">4320p (8K)</option>
-                                </select>
-                                <Button onClick={handleBack} className="!bg-red-600 hover:!bg-red-700">End Stream</Button>
+                         <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm">
+                            <h3 className="text-xl font-semibold mb-4">Recent Activity</h3>
+                            <ul className="space-y-4">
+                                {recentLogs.map(log => (
+                                    <li key={log.id} className="flex items-start gap-3">
+                                        <div className="bg-slate-100 dark:bg-slate-700 p-2 rounded-full mt-1">
+                                            {activityIcons[log.type] || <RssIcon className="w-5 h-5 text-slate-500" />}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm">{log.text}</p>
+                                            <p className="text-xs text-slate-400">{log.timestamp.toLocaleDateString()}</p>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+                )}
+                
+                {ownerTab === 'users' && (
+                     <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm">
+                        <div className="border-b border-slate-200 dark:border-slate-700">
+                            <nav className="-mb-px flex space-x-6">
+                                <TabButton active={userSubTab === 'students'} onClick={() => setUserSubTab('students')} count={users.filter(u => u.role === Role.Student).length}>Students</TabButton>
+                                <TabButton active={userSubTab === 'teachers'} onClick={() => setUserSubTab('teachers')} count={users.filter(u => u.role === Role.Teacher && u.teacherApplication?.status === 'Approved').length}>Teachers</TabButton>
+                                <TabButton active={userSubTab === 'applications'} onClick={() => setUserSubTab('applications')} count={teacherApplications.length}>Applications</TabButton>
+                            </nav>
+                        </div>
+                        <div className="mt-4 max-h-96 overflow-y-auto">
+                            {(userSubTab === 'students' || userSubTab === 'teachers') && users.filter(u => (userSubTab === 'students' ? u.role === Role.Student : u.role === Role.Teacher && u.teacherApplication?.status === 'Approved')).map(user => (
+                                <div key={user.id} className="flex items-center p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50">
+                                    <img src={user.profilePicture} alt={user.name} className="w-10 h-10 rounded-full object-cover mr-4" />
+                                    <div className="flex-grow">
+                                        <p className="font-semibold">{user.name}</p>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400">{user.email}</p>
+                                    </div>
+                                    <Button onClick={() => setIsUserDetailsModalOpen(user)} variant="secondary" className="!py-1 !px-3 !text-sm">View</Button>
+                                </div>
+                            ))}
+                            {userSubTab === 'applications' && teacherApplications.map(user => (
+                                 <div key={user.id} className="flex items-center p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50">
+                                    <img src={user.profilePicture} alt={user.name} className="w-10 h-10 rounded-full object-cover mr-4" />
+                                    <div className="flex-grow">
+                                        <p className="font-semibold">{user.name}</p>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400">{user.email}</p>
+                                    </div>
+                                     <div className="flex items-center gap-2">
+                                        <Button onClick={() => setIsAppDetailsModalOpen(user)} variant="secondary" className="!py-1 !px-3 !text-sm">Message</Button>
+                                        <Button onClick={() => addToast('Simulating CV download...','info')} variant="secondary" className="!py-1 !px-3 !text-sm"><ArrowDownTrayIcon className="w-4 h-4" title="Download CV" /></Button>
+                                        <Button onClick={() => handleApproveTeacher(user.id)} className="!py-1 !px-3 !text-sm !bg-green-500 hover:!bg-green-600"><CheckCircleIcon className="w-4 h-4"/></Button>
+                                        <Button onClick={() => handleRejectTeacher(user.id)} className="!py-1 !px-3 !text-sm !bg-red-500 hover:!bg-red-600"><XCircleIcon className="w-4 h-4"/></Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+                
+                {ownerTab === 'finances' && (
+                    <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm">
+                        <div className="flex justify-between items-center mb-4">
+                             <h3 className="text-xl font-semibold">Financials</h3>
+                             <Button onClick={() => setIsWithdrawalModalOpen(true)}>Withdraw Funds</Button>
+                        </div>
+                        <h4 className="text-lg font-semibold mb-2">Withdrawal History</h4>
+                        <div className="overflow-x-auto">
+                           <table className="w-full text-sm text-left">
+                                <thead className="text-xs text-slate-700 dark:text-slate-300 uppercase bg-slate-50 dark:bg-slate-700">
+                                    <tr>
+                                        <th scope="col" className="px-6 py-3">Date</th>
+                                        <th scope="col" className="px-6 py-3">Amount</th>
+                                        <th scope="col" className="px-6 py-3">Method</th>
+                                        <th scope="col" className="px-6 py-3">Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {withdrawals.map(w => (
+                                        <tr key={w.id} className="bg-white dark:bg-slate-800 border-b dark:border-slate-700">
+                                            <td className="px-6 py-4">{w.timestamp.toLocaleDateString()}</td>
+                                            <td className="px-6 py-4 font-medium">K{w.amount.toLocaleString()}</td>
+                                            <td className="px-6 py-4">{w.method}</td>
+                                            <td className="px-6 py-4 text-xs">{w.phoneNumber || `${w.bankName} - ${w.accountNumber}`}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    const SubjectDetailScreen: React.FC = () => {
+        const subject = subjects.find(s => s.id === currentPage.subjectId);
+        if (!subject || !currentUser) return <div className="p-6">Subject not found.</div>;
+        
+        const lessons = videoLessons.filter(l => l.subjectId === subject.id);
+        const isTeacherOfSubject = currentUser.role === Role.Teacher && subject.teacherId === currentUser.id;
+
+        return (
+            <div className="p-4 sm:p-6">
+                <div className="mb-6">
+                    <img src={subject.coverPhoto} alt={subject.name} className="h-48 w-full object-cover rounded-2xl"/>
+                    <h1 className="text-3xl font-bold mt-4">{subject.name}</h1>
+                    <p className="text-slate-500 dark:text-slate-400">Taught by {subject.teacherName}</p>
+                </div>
+                 {isTeacherOfSubject && (
+                    <div className="mb-6 p-4 bg-slate-100 dark:bg-slate-800/50 rounded-2xl flex flex-col sm:flex-row items-center gap-4 shadow-sm">
+                        <h3 className="text-lg font-bold flex-1">Teacher Tools</h3>
+                        <div className="flex gap-2 w-full sm:w-auto">
+                            <Button onClick={() => setNewContentModal({type: 'lesson', subjectId: subject.id})} className="w-full flex-1 flex items-center justify-center gap-2"><CloudArrowUpIcon className="w-5 h-5" /> Add Lesson</Button>
+                            <Button onClick={() => setNewContentModal({type: 'class', subjectId: subject.id})} variant="secondary" className="w-full flex-1 flex items-center justify-center gap-2"><VideoCameraIcon className="w-5 h-5" /> Schedule Class</Button>
+                        </div>
+                    </div>
+                )}
+                 <div>
+                    <h2 className="text-2xl font-bold mb-4">Video Lessons</h2>
+                    <div className="space-y-4">
+                        {lessons.length > 0 ? lessons.map(lesson => (
+                            <div key={lesson.id} onClick={() => navigate('lesson', { lessonId: lesson.id })} className="bg-white dark:bg-slate-800 p-4 rounded-xl flex items-center gap-4 hover-lift cursor-pointer">
+                                <img src={lesson.thumbnail} alt={lesson.title} className="w-28 h-20 object-cover rounded-lg" />
+                                <div className="flex-1">
+                                    <h3 className="font-bold text-lg">{lesson.title}</h3>
+                                    <p className="text-sm text-slate-500">{lesson.duration} &bull; {lesson.difficulty}</p>
+                                </div>
+                                <PlayIcon className="w-8 h-8 text-teal-500"/>
                             </div>
-                         )}
+                        )) : (
+                            <div className="text-center py-8 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                                <p className="text-slate-500 dark:text-slate-400">No lessons have been added to this subject yet.</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
         );
     };
 
-    const UserDetailModal: React.FC = () => {
-        if (!selectedUserForDetail) return null;
+    const LessonDetailScreen: React.FC = () => {
+        const lesson = videoLessons.find(l => l.id === currentPage.lessonId);
+        if (!lesson || !currentUser) return <div className="p-6">Lesson not found.</div>;
 
-        const userPayments = payments.filter(p => p.studentId === selectedUserForDetail.id);
-        const userExamAttempts = examinationAttempts.filter(a => a.studentId === selectedUserForDetail.id);
-        const teacherSubjects = subjects.filter(s => s.teacherId === selectedUserForDetail.id);
+        const subject = subjects.find(s => s.id === lesson.subjectId);
+        const isBookmarked = bookmarks.some(b => b.studentId === currentUser.id && b.lessonId === lesson.id);
 
-        return(
-            <Modal isOpen={true} onClose={() => setSelectedUserForDetail(null)} title={`User Details: ${selectedUserForDetail.name}`}>
-                <div className="space-y-4 text-sm">
-                    <div className="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                        <p><strong>Name:</strong> {selectedUserForDetail.name}</p>
-                        <p><strong>Email:</strong> {selectedUserForDetail.email}</p>
-                        <p><strong>Role:</strong> {selectedUserForDetail.role}</p>
+        const subjectLessons = videoLessons
+          .filter(l => l.subjectId === lesson.subjectId)
+          .sort((a,b) => a.title.localeCompare(b.title)); // A consistent sort order is important
+        
+        const currentIndex = subjectLessons.findIndex(l => l.id === lesson.id);
+        const prevLesson = currentIndex > 0 ? subjectLessons[currentIndex - 1] : null;
+        const nextLesson = currentIndex < subjectLessons.length - 1 ? subjectLessons[currentIndex + 1] : null;
+
+        return (
+            <div className="p-4 sm:p-6">
+                <div className="max-w-4xl mx-auto">
+                    {/* Video Player Placeholder */}
+                    <div className="aspect-video bg-black rounded-2xl mb-4 flex items-center justify-center">
+                        <img src={lesson.thumbnail} alt={lesson.title} className="w-full h-full object-cover rounded-2xl" />
                     </div>
-                    {selectedUserForDetail.role === Role.Student && userPayments.length > 0 && (
+                    
+                    <div className="flex justify-between items-start mb-2">
                         <div>
-                            <h4 className="font-bold mb-1">Payment History</h4>
-                            <div className="max-h-40 overflow-y-auto space-y-1">
-                                {userPayments.map(p => <p key={p.id} className="p-2 bg-slate-200 dark:bg-slate-600 rounded">K{p.amount} for {p.plan} on {p.date.toLocaleDateString()}</p>)}
-                            </div>
+                            <p className="text-teal-500 font-semibold">{subject?.name}</p>
+                            <h1 className="text-3xl font-bold">{lesson.title}</h1>
                         </div>
-                    )}
-                     {selectedUserForDetail.role === Role.Student && userExamAttempts.length > 0 && (
-                        <div>
-                            <h4 className="font-bold mb-1">Exam History</h4>
-                            <div className="max-h-40 overflow-y-auto space-y-1">
-                                {userExamAttempts.map(a => <p key={a.id} className="p-2 bg-slate-200 dark:bg-slate-600 rounded">{a.examinationTitle}: {a.score}/{a.totalQuestions}</p>)}
-                            </div>
-                        </div>
-                    )}
-                    {selectedUserForDetail.role === Role.Teacher && (
-                         <div>
-                            <h4 className="font-bold mb-1">Assigned Subjects</h4>
-                            <p>{teacherSubjects.map(s => s.name).join(', ') || 'None'}</p>
+                         {currentUser.role === Role.Student && (
+                            <button onClick={() => handleToggleBookmark(lesson.id)} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors" aria-label={isBookmarked ? 'Remove bookmark' : 'Add bookmark'}>
+                                <BookmarkIcon title={isBookmarked ? 'Remove bookmark' : 'Add bookmark'} className={`w-7 h-7 ${isBookmarked ? 'text-teal-500' : 'text-slate-500'}`} filled={isBookmarked} />
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-4 text-slate-500 dark:text-slate-400 text-sm mb-4">
+                        <span><ClockIcon className="w-4 h-4 inline mr-1" /> {lesson.duration}</span>
+                        <span><StarIcon className="w-4 h-4 inline mr-1" /> {lesson.difficulty}</span>
+                    </div>
+
+                    <p className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{lesson.description}</p>
+
+                    {currentUser.role === Role.Student && (
+                        <div className="mt-8 pt-6 border-t dark:border-slate-700 flex justify-between items-center">
+                            <Button onClick={() => navigate('lesson', { lessonId: prevLesson!.id })} disabled={!prevLesson} variant="secondary" className="flex items-center gap-2">
+                                <ArrowLeftIcon className="w-5 h-5" /> Previous
+                            </Button>
+                            <Button onClick={() => navigate('lesson', { lessonId: nextLesson!.id })} disabled={!nextLesson} className="flex items-center gap-2">
+                                Next <ArrowRightIcon className="w-5 h-5" />
+                            </Button>
                         </div>
                     )}
                 </div>
+            </div>
+        );
+    };
+    const BookstoreScreen: React.FC = () => {
+        if (!currentUser) return null;
+        const myPurchases = bookPurchases.filter(p => p.studentId === currentUser.id).map(p => p.bookId);
+
+        return (
+            <div className="p-4 sm:p-6">
+                <h2 className="text-3xl font-bold mb-6">Bookstore & Library</h2>
+                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                    {books.map(book => {
+                        const isPurchased = myPurchases.includes(book.id);
+                        return (
+                            <div key={book.id} className="bg-white dark:bg-slate-800 rounded-lg shadow-md flex flex-col items-center p-4 text-center hover-lift">
+                                <img src={book.coverPhoto} alt={book.title} className="h-48 w-auto object-contain rounded-md mb-2"/>
+                                <h3 className="font-bold flex-grow">{book.title}</h3>
+                                <p className="text-sm text-slate-500">{book.author}</p>
+                                <div className="mt-4 w-full">
+                                    {isPurchased ? (
+                                        <Button variant="secondary" className="w-full">Read Now</Button>
+                                    ) : (
+                                        <Button onClick={() => handleBuyBook(book.id)} className="w-full">
+                                            Buy K{book.price.toLocaleString()}
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+                        )
+                    })}
+                 </div>
+            </div>
+        );
+    };
+    const AiTutorScreen: React.FC = () => {
+        const chatEndRef = useRef<HTMLDivElement>(null);
+        useEffect(() => {
+            chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, [tutorChatMessages]);
+
+        return (
+            <div className="h-full flex flex-col p-4">
+                <div className="flex-grow overflow-y-auto space-y-4 pr-2">
+                    {tutorChatMessages.map((msg, index) => (
+                         <div key={index} className={`flex items-end gap-2 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            {msg.sender === 'ai' && <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0"><SparklesIcon className="w-5 h-5 text-white"/></div>}
+                            <div className={`max-w-md p-3 rounded-2xl ${msg.sender === 'user' ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-bl-none'}`}>
+                                <p className="text-sm">{msg.text}</p>
+                            </div>
+                         </div>
+                    ))}
+                    {isTutorLoading && (
+                        <div className="flex items-end gap-2 justify-start">
+                            <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0"><SparklesIcon className="w-5 h-5 text-white"/></div>
+                            <div className="max-w-md p-3 rounded-2xl bg-slate-200 dark:bg-slate-700 rounded-bl-none">
+                                <div className="flex gap-1.5">
+                                    <span className="h-2 w-2 bg-slate-400 rounded-full animate-bounce delay-0"></span>
+                                    <span className="h-2 w-2 bg-slate-400 rounded-full animate-bounce delay-150"></span>
+                                    <span className="h-2 w-2 bg-slate-400 rounded-full animate-bounce delay-300"></span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    <div ref={chatEndRef} />
+                </div>
+                 <form onSubmit={handleTutorSubmit} className="flex-shrink-0 pt-4 flex items-center gap-2">
+                    <input 
+                        type="text"
+                        value={tutorInput}
+                        onChange={(e) => setTutorInput(e.target.value)}
+                        placeholder="Ask about any topic..."
+                        className="w-full px-4 py-3 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    />
+                    <Button type="submit" className="!px-4 !rounded-full" disabled={isTutorLoading || !tutorInput.trim()}>
+                        <SendIcon className="w-6 h-6"/>
+                    </Button>
+                </form>
+            </div>
+        );
+    };
+
+    const HelpAndSupportScreen: React.FC = () => {
+        return (
+            <div className="p-4 sm:p-6 max-w-2xl mx-auto">
+                <h2 className="text-3xl font-bold mb-6">Help & Support</h2>
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-md mb-8">
+                    <h3 className="text-xl font-bold mb-4">Contact Us</h3>
+                    <p className="text-slate-600 dark:text-slate-300 mb-4">
+                        Have an urgent issue or a question you can't find an answer to? Our support team is available on WhatsApp.
+                    </p>
+                    <a href="https://wa.me/265883526602" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 font-bold py-3 px-6 rounded-full transition-all duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-4 active:scale-95 bg-green-500 text-white hover:bg-green-600 focus:ring-green-300 w-full">
+                        <ChatBubbleLeftRightIcon className="w-6 h-6" />
+                        Chat on WhatsApp
+                    </a>
+                </div>
+                 <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-md">
+                    <h3 className="text-xl font-bold mb-4">Frequently Asked Questions</h3>
+                    <div className="space-y-4">
+                        <div>
+                            <h4 className="font-semibold">How do I subscribe to a plan?</h4>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">Navigate to your profile, select 'Subscription', and choose a plan. You can pay via Airtel Money, TNM Mpamba, or Bank Transfer.</p>
+                        </div>
+                         <div>
+                            <h4 className="font-semibold">Can I watch lessons offline?</h4>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">Currently, offline viewing is not supported. You need an active internet connection to stream video lessons.</p>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold">How do I reset my password?</h4>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">On the login screen, click "Forgot Password" and follow the instructions sent to your email address.</p>
+                        </div>
+                    </div>
+                 </div>
+            </div>
+        );
+    };
+
+    const AboutUsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => (
+        <Modal isOpen={true} onClose={onClose} title="About SmartLearn">
+            <div className="text-center">
+                <SmartLearnLogo className="w-16 h-16 mx-auto text-teal-600" />
+                <h3 className="text-2xl font-bold mt-4">Our Mission</h3>
+                <p className="mt-2 text-slate-600 dark:text-slate-300">
+                    To provide accessible, high-quality secondary education to students across Malawi, powered by modern technology and dedicated educators.
+                </p>
+                <h3 className="text-2xl font-bold mt-6">Our Team</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                    <div className="p-4 rounded-lg bg-slate-100 dark:bg-slate-700">
+                        <img src="https://i.pravatar.cc/150?u=user-7" alt="Bright Nason" className="w-20 h-20 rounded-full mx-auto object-cover"/>
+                        <p className="font-bold mt-2">Bright Nason</p>
+                        <p className="text-sm text-teal-600 dark:text-teal-400">Founder & CEO</p>
+                    </div>
+                     <div className="p-4 rounded-lg bg-slate-100 dark:bg-slate-700">
+                        <img src="https://i.pravatar.cc/150?u=user-2" alt="Emily Carter" className="w-20 h-20 rounded-full mx-auto object-cover"/>
+                        <p className="font-bold mt-2">Emily Carter</p>
+                        <p className="text-sm text-teal-600 dark:text-teal-400">Head of Curriculum</p>
+                    </div>
+                </div>
+            </div>
+        </Modal>
+    );
+
+    const WithdrawalModal: React.FC<{ balance: number, onClose: () => void, onSubmit: (amount: number, method: Withdrawal['method'], details: any) => void }> = ({ balance, onClose, onSubmit }) => {
+        const [amount, setAmount] = useState('');
+        const [method, setMethod] = useState<Withdrawal['method']>('Airtel Money');
+        const [phone, setPhone] = useState('');
+        const [bankName, setBankName] = useState('');
+        const [accountNumber, setAccountNumber] = useState('');
+
+        const handleSubmit = (e: React.FormEvent) => {
+            e.preventDefault();
+            const numAmount = parseFloat(amount);
+            if (isNaN(numAmount) || numAmount <= 0 || numAmount > balance) {
+                addToast('Invalid withdrawal amount.', 'error');
+                return;
+            }
+            let details = {};
+            if (method === 'Bank') {
+                if(!bankName || !accountNumber) { addToast('Bank details are required.', 'error'); return; }
+                details = { bankName, accountNumber };
+            } else {
+                if(!phone) { addToast('Phone number is required.', 'error'); return; }
+                details = { phoneNumber: phone };
+            }
+            onSubmit(numAmount, method, details);
+        };
+        
+        return (
+            <Modal isOpen={true} onClose={onClose} title="Withdraw Funds">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <p className="text-sm">Available Balance: <span className="font-bold text-teal-500">K{balance.toLocaleString()}</span></p>
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Amount (K)</label>
+                        <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="e.g., 50000" className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700" />
+                    </div>
+                     <div>
+                        <label className="block text-sm font-medium mb-1">Method</label>
+                        <select value={method} onChange={e => setMethod(e.target.value as Withdrawal['method'])} className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700">
+                            <option>Airtel Money</option>
+                            <option>TNM Mpamba</option>
+                            <option>Bank</option>
+                        </select>
+                    </div>
+                    {method === 'Bank' ? (
+                        <>
+                           <div>
+                                <label className="block text-sm font-medium mb-1">Bank Name</label>
+                                <input type="text" value={bankName} onChange={e => setBankName(e.target.value)} placeholder="e.g., National Bank" className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Account Number</label>
+                                <input type="text" value={accountNumber} onChange={e => setAccountNumber(e.target.value)} placeholder="e.g., 1001234567" className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700" />
+                            </div>
+                        </>
+                    ) : (
+                         <div>
+                            <label className="block text-sm font-medium mb-1">Phone Number</label>
+                            <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="e.g., 099xxxxxxx" className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700" />
+                        </div>
+                    )}
+                    <div className="flex justify-end gap-3 pt-4">
+                        <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+                        <Button type="submit">Confirm Withdrawal</Button>
+                    </div>
+                </form>
             </Modal>
         )
-    }
+    };
+    
+    const UserDetailsModal: React.FC<{ user: User, onClose: () => void }> = ({ user, onClose }) => (
+        <Modal isOpen={true} onClose={onClose} title="User Details">
+            <div className="flex flex-col items-center">
+                 <img src={user.profilePicture} alt={user.name} className="w-24 h-24 rounded-full object-cover" />
+                 <h3 className="text-xl font-bold mt-4">{user.name}</h3>
+                 <p className="text-slate-500">{user.email}</p>
+                 <span className={`mt-2 px-3 py-1 text-xs font-semibold rounded-full ${user.role === Role.Student ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>{user.role}</span>
+            </div>
+             <div className="mt-6 border-t pt-4">
+                 {user.role === Role.Student && (
+                    <>
+                        <h4 className="font-semibold mb-2">Student Info</h4>
+                        <p><strong>Subscription:</strong> {getSubscriptionStatus(user).plan} ({getSubscriptionStatus(user).status})</p>
+                        <p className="mt-2"><strong>Enrolled Subjects:</strong></p>
+                        <ul className="list-disc list-inside">
+                            {enrollments.filter(e => e.studentId === user.id).map(e => (
+                                <li key={e.subjectId}>{subjects.find(s=>s.id === e.subjectId)?.name}</li>
+                            ))}
+                        </ul>
+                    </>
+                 )}
+                  {user.role === Role.Teacher && (
+                     <>
+                        <h4 className="font-semibold mb-2">Teacher Info</h4>
+                        <p><strong>Application Status:</strong> <span className={user.teacherApplication?.status === 'Approved' ? 'text-green-500' : 'text-amber-500'}>{user.teacherApplication?.status}</span></p>
+                        <p className="mt-2"><strong>Teaching Subjects:</strong></p>
+                        <ul className="list-disc list-inside">
+                           {subjects.filter(s => s.teacherId === user.id).map(s => (
+                                <li key={s.id}>{s.name} ({videoLessons.filter(l=>l.subjectId === s.id).length} lessons)</li>
+                           ))}
+                        </ul>
+                    </>
+                 )}
+            </div>
+        </Modal>
+    );
+    
+    const ApplicationDetailsModal: React.FC<{ applicant: User, onClose: () => void }> = ({ applicant, onClose }) => (
+         <Modal isOpen={true} onClose={onClose} title={`Application: ${applicant.name}`}>
+            <div>
+                <h4 className="font-semibold mb-2">Introductory Message</h4>
+                <p className="text-slate-600 dark:text-slate-300 p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg whitespace-pre-wrap">{applicant.teacherApplication?.message}</p>
+            </div>
+         </Modal>
+    );
+    
+    const NewLessonModal: React.FC<{
+        teacherSubjects: Subject[];
+        preselectedSubjectId: string | null;
+        onClose: () => void;
+        onSubmit: (data: { title: string; description: string; subjectId: string; duration: string; difficulty: 'Beginner' | 'Intermediate' | 'Advanced' }) => void;
+    }> = ({ teacherSubjects, preselectedSubjectId, onClose, onSubmit }) => {
+        const [title, setTitle] = useState('');
+        const [description, setDescription] = useState('');
+        const [subjectId, setSubjectId] = useState(preselectedSubjectId || (teacherSubjects[0]?.id || ''));
+        const [duration, setDuration] = useState('');
+        const [difficulty, setDifficulty] = useState<'Beginner' | 'Intermediate' | 'Advanced'>('Beginner');
+        
+        const handleSubmit = (e: React.FormEvent) => {
+            e.preventDefault();
+            if (!title || !description || !subjectId || !duration) {
+                addToast('Please fill out all fields.', 'error');
+                return;
+            }
+            onSubmit({ title, description, subjectId, duration, difficulty });
+        };
+        
+        return (
+            <Modal isOpen={true} onClose={onClose} title="Upload New Lesson">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Lesson Title</label>
+                        <input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700" required />
+                    </div>
+                     <div>
+                        <label className="block text-sm font-medium mb-1">Description</label>
+                        <textarea value={description} onChange={e => setDescription(e.target.value)} rows={4} className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700" required />
+                    </div>
+                     <div>
+                        <label className="block text-sm font-medium mb-1">Subject</label>
+                        <select value={subjectId} onChange={e => setSubjectId(e.target.value)} className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700" required>
+                            {teacherSubjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        </select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium mb-1">Duration (e.g., 15:30)</label>
+                            <input type="text" value={duration} onChange={e => setDuration(e.target.value)} placeholder="MM:SS" className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700" required />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1">Difficulty</label>
+                             <select value={difficulty} onChange={e => setDifficulty(e.target.value as any)} className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700" required>
+                                <option>Beginner</option>
+                                <option>Intermediate</option>
+                                <option>Advanced</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div className="flex justify-end gap-3 pt-4">
+                        <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+                        <Button type="submit">Upload Lesson</Button>
+                    </div>
+                </form>
+            </Modal>
+        )
+    };
+    
+    const NewLiveClassModal: React.FC<{
+        teacherSubjects: Subject[];
+        preselectedSubjectId: string | null;
+        onClose: () => void;
+        onSubmit: (data: { title: string; subjectId: string; startTime: Date }) => void;
+    }> = ({ teacherSubjects, preselectedSubjectId, onClose, onSubmit }) => {
+        const [title, setTitle] = useState('');
+        const [subjectId, setSubjectId] = useState(preselectedSubjectId || (teacherSubjects[0]?.id || ''));
+        const [startTime, setStartTime] = useState('');
 
-    const MainContent: React.FC = () => {
+        const handleSubmit = (e: React.FormEvent) => {
+            e.preventDefault();
+            if (!title || !subjectId || !startTime) {
+                addToast('Please fill out all fields.', 'error');
+                return;
+            }
+            onSubmit({ title, subjectId, startTime: new Date(startTime) });
+        };
+
+        return (
+            <Modal isOpen={true} onClose={onClose} title="Schedule Live Class">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                     <div>
+                        <label className="block text-sm font-medium mb-1">Class Title</label>
+                        <input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700" required />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Subject</label>
+                        <select value={subjectId} onChange={e => setSubjectId(e.target.value)} className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700" required>
+                            {teacherSubjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        </select>
+                    </div>
+                     <div>
+                        <label className="block text-sm font-medium mb-1">Start Time</label>
+                        <input type="datetime-local" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700" required />
+                    </div>
+                    <div className="flex justify-end gap-3 pt-4">
+                        <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+                        <Button type="submit">Schedule Class</Button>
+                    </div>
+                </form>
+            </Modal>
+        )
+    };
+
+
+    const ProfileScreen: React.FC = () => {
         if (!currentUser) return null;
 
-        if (activeLiveStream) return <LiveStreamView />;
+        const { status, plan } = getSubscriptionStatus(currentUser);
 
-        if (selectedSubject) {
-            return <SubjectDetailView 
-                user={currentUser}
-                subject={selectedSubject} 
-                lessons={lessons.filter(l => l.subjectId === selectedSubject.id)}
-                posts={subjectPosts.filter(p => p.subjectId === selectedSubject.id)}
-                comments={postComments}
-                completions={completions}
-                bookmarks={bookmarks}
-                onWatchLesson={setSelectedLesson}
-                onToggleBookmark={handleToggleBookmark}
-                onAddComment={handleAddComment}
-            />;
-        }
+        const SubscriptionManagement: React.FC = () => {
+            return (
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-md">
+                    <h3 className="text-xl font-bold mb-4">Subscription Management</h3>
+                    
+                    <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 mb-6">
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Current Plan</p>
+                        <p className="text-2xl font-bold text-teal-600 dark:text-teal-400">{plan === SubscriptionPlan.None ? 'No Active Plan' : plan}</p>
+                        {plan !== SubscriptionPlan.None && (
+                            <p className="text-sm mt-1">
+                                Status: <span className={status === 'Active' ? 'text-green-500' : 'text-red-500'}>{status}</span>
+                                {status !== 'None' && ` | Expires on: ${currentUser.subscription?.endDate.toLocaleDateString()}`}
+                            </p>
+                        )}
+                    </div>
 
-        switch (currentView) {
-            case 'subjects':
-                const liveClassesBySubject = liveClasses.reduce((acc, lc) => {
-                    if (lc.startTime > new Date()) acc.add(lc.subjectId);
-                    return acc;
-                }, new Set());
-                return (
-                     <div className="p-4 animate-fade-in-up">
-                        <h1 className="text-2xl font-bold mb-4 text-slate-800 dark:text-slate-100">All Subjects</h1>
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {subjects.map(subject => {
-                                const subjectLessons = lessons.filter(l => l.subjectId === subject.id);
-                                const completedLessons = completions.filter(c => c.studentId === currentUser.id && subjectLessons.some(l => l.id === c.lessonId)).length;
-                                const progress = subjectLessons.length > 0 ? Math.round((completedLessons / subjectLessons.length) * 100) : 0;
-                                
-                                return <SubjectCard 
-                                    key={subject.id} 
-                                    subject={subject} 
-                                    onClick={() => handleSelectSubject(subject)}
-                                    progress={progress}
-                                    isLocked={currentUser.role === Role.Student && subscriptionStatus !== 'Active'}
-                                    isLive={liveClassesBySubject.has(subject.id)}
-                                />;
+                    <div>
+                        <h4 className="font-semibold mb-3">Choose a new plan</h4>
+                        <div className="space-y-4">
+                            {PLANS.map(p => {
+                                const isCurrentPlan = plan === p.plan && status === 'Active';
+                                return (
+                                    <div key={p.plan} className={`p-4 rounded-lg border-2 ${isCurrentPlan ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20' : 'border-slate-200 dark:border-slate-700'}`}>
+                                        <div className="flex justify-between items-center">
+                                            <div>
+                                                <h5 className="font-bold">{p.name}</h5>
+                                                <p className="text-sm text-slate-500 dark:text-slate-400">{p.description}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-lg font-bold">K{p.price.toLocaleString()}</p>
+                                                {isCurrentPlan ? (
+                                                    <Button variant="secondary" disabled className="!py-1 !px-4 mt-1 cursor-not-allowed opacity-70">Current Plan</Button>
+                                                ) : (
+                                                    <Button onClick={() => handleSubscriptionChange(p.plan)} className="!py-1 !px-4 mt-1">
+                                                        {plan === SubscriptionPlan.None || status === 'Expired' ? 'Subscribe' : 'Switch Plan'}
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
                             })}
                         </div>
                     </div>
-                );
-            case 'live':
-                // This view is now handled by the activeLiveStream state
-                return <div>Live</div>;
-            case 'bookstore':
-                return <BookStoreView books={BOOKS} purchases={bookPurchases} studentId={currentUser.id} onBuyBook={handleBuyBook} onReadBook={handleOpenBookReader} />;
-            case 'examinations':
-                return <ExaminationsView />;
-            case 'takeExam':
-                return <TakeExaminationView />;
-            case 'examResults':
-                return <ExaminationResultsView />;
-            case 'dashboard':
-            default:
-                if (currentUser.role === Role.Student) {
-                    return <StudentDashboard 
-                        user={currentUser}
-                        subscriptionStatus={subscriptionStatus}
-                        subscriptionPlan={subscriptionPlan}
-                        allSubjects={subjects}
-                        allLessons={lessons}
-                        allLiveClasses={liveClasses}
-                        bookmarks={bookmarks}
-                        activeLiveClass={liveClasses.find(lc => (lc.startTime.getTime() < Date.now()) && (lc.startTime.getTime() + 60*60*1000 > Date.now())) || null}
-                        onJoinLiveClass={handleJoinLiveClass}
-                        onPayForLessons={() => setPaymentModalOpen(true)}
-                        onWatchLesson={setSelectedLesson}
-                        onNavigate={(view) => setCurrentView(view)}
-                    />;
-                }
-                if (currentUser.role === Role.Teacher) {
-                    return <TeacherDashboard 
-                        user={currentUser}
-                        subjects={subjects.filter(s => s.teacherId === currentUser.id)}
-                        activityLogs={activityLogs.filter(log => log.userId === currentUser.id)}
-                        onStartLiveClass={handleStartLiveClass}
-                        onUploadLesson={handleUploadLesson}
-                        onCreatePost={handleCreatePost}
-                    />;
-                }
-                if (currentUser.role === Role.Owner) {
-                    return <OwnerDashboard
-                        user={currentUser}
-                        allUsers={users}
-                        payments={payments}
-                        withdrawals={withdrawals}
-                        messages={directMessages}
-                        applications={jobApplications}
-                        activityLogs={activityLogs}
-                        onUpdateApplicationStatus={handleUpdateApplicationStatus}
-                        onWithdraw={handleWithdrawal}
-                        onViewUser={setSelectedUserForDetail}
-                        addToast={addToast}
-                     />;
-                }
-        }
-    }
+                </div>
+            );
+        };
 
-    if (!currentUser) {
-        return <AuthScreen onLogin={handleLogin} onSignUp={handleSignUp} onGoogleAuth={handleGoogleAuth} onApply={() => setApplicationModalOpen(true)} />;
-    }
-
-    const headerTitle = selectedSubject ? selectedSubject.name : 
-                        activeLiveStream ? 'Live Class' :
-                        currentView.charAt(0).toUpperCase() + currentView.slice(1);
-
-    return (
-        <div className="min-h-screen bg-slate-100 dark:bg-slate-900">
-            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
-            <div ref={searchRef} className="relative z-20">
-                <Header 
-                    user={currentUser} 
-                    onLogout={handleLogout} 
-                    title={headerTitle}
-                    onBack={selectedSubject || activeLiveStream || lastExamResult || selectedBookToRead ? handleBack : undefined}
-                    onNavigateToSettings={() => setSettingsModalOpen(true)}
-                    unreadCount={unreadNotifications}
-                    onToggleNotifications={() => setNotificationsPanelOpen(prev => !prev)}
-                    searchQuery={searchQuery}
-                    onSearchChange={setSearchQuery}
-                />
-                {searchResults && (
-                    <SearchResultsPanel
-                        results={searchResults}
-                        onSelectSubject={(subject) => {
-                            handleSelectSubject(subject);
-                            setSearchQuery('');
-                        }}
-                        onSelectLesson={(lesson) => {
-                            setSelectedLesson(lesson);
-                            setSearchQuery('');
-                        }}
-                        onSelectLiveClass={(lc) => {
-                            handleJoinLiveClass(lc);
-                            setSearchQuery('');
-                        }}
-                    />
-                )}
+        return (
+            <div className="p-4 sm:p-6 max-w-4xl mx-auto">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-8">
+                    <img src={currentUser.profilePicture} alt={currentUser.name} className="w-24 h-24 rounded-full object-cover ring-4 ring-white dark:ring-slate-800 shadow-lg"/>
+                    <div>
+                        <h2 className="text-3xl font-bold text-center sm:text-left">{currentUser.name}</h2>
+                        <p className="text-slate-500 dark:text-slate-400 text-center sm:text-left">{currentUser.email}</p>
+                    </div>
+                </div>
+                
+                {currentUser.role === Role.Student && <SubscriptionManagement />}
+                
+                <div className="mt-8 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-md">
+                    <h3 className="text-xl font-bold mb-4">Profile Settings</h3>
+                    <p className="text-slate-500">Other settings like changing password or updating profile details would go here.</p>
+                </div>
             </div>
-            
-            <NotificationsPanel />
+        );
+    };
 
-            <main className="max-w-7xl mx-auto">
-                <MainContent />
+    const renderPage = () => {
+        switch (currentPage.page) {
+            case 'dashboard':
+                switch (currentUser?.role) {
+                    case Role.Student: return <StudentDashboard 
+                        currentUser={currentUser}
+                        enrollments={enrollments.filter(e => e.studentId === currentUser.id)}
+                        subjects={subjects}
+                        videoLessons={videoLessons}
+                        liveClasses={liveClasses}
+                        lessonCompletions={lessonCompletions.filter(c => c.studentId === currentUser.id)}
+                        bookmarks={bookmarks.filter(b => b.studentId === currentUser.id)}
+                        navigate={navigate}
+                    />;
+                    case Role.Teacher: return <TeacherDashboard />;
+                    case Role.Owner: return <OwnerDashboard />;
+                    default: return <div>Loading...</div>;
+                }
+            case 'subject': return <SubjectDetailScreen />;
+            case 'lesson': return <LessonDetailScreen />;
+            case 'bookstore': return <BookstoreScreen />;
+            case 'tutor': return <AiTutorScreen />;
+            case 'help': return <HelpAndSupportScreen />;
+            case 'profile': return <ProfileScreen />;
+            case 'exploreSubjects': return <ExploreSubjectsScreen
+                allSubjects={subjects}
+                studentEnrollments={enrollments.filter(e => e.studentId === currentUser.id)}
+                onEnroll={handleEnroll}
+            />;
+            default: return <div>Page not found</div>;
+        }
+    };
+    
+    const BottomNav = () => (
+        <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex justify-around p-2 z-30 md:hidden">
+           <button onClick={resetToDashboard} className={`flex flex-col items-center gap-1 p-2 rounded-lg ${currentPage.page === 'dashboard' ? 'text-teal-600' : 'text-slate-500'}`}>
+               <HomeIcon className="w-6 h-6" />
+               <span className="text-xs">Home</span>
+           </button>
+           <button onClick={() => navigate('bookstore')} className={`flex flex-col items-center gap-1 p-2 rounded-lg ${currentPage.page === 'bookstore' ? 'text-teal-600' : 'text-slate-500'}`}>
+               <BookOpenIcon className="w-6 h-6" />
+               <span className="text-xs">Library</span>
+           </button>
+           <button onClick={() => navigate('tutor')} className={`flex flex-col items-center gap-1 p-2 rounded-lg ${currentPage.page === 'tutor' ? 'text-teal-600' : 'text-slate-500'}`}>
+               <SparklesIcon className="w-6 h-6" />
+               <span className="text-xs">AI Tutor</span>
+           </button>
+           <button onClick={() => navigate('help')} className={`flex flex-col items-center gap-1 p-2 rounded-lg ${currentPage.page === 'help' ? 'text-teal-600' : 'text-slate-500'}`}>
+                <QuestionMarkCircleIcon className="w-6 h-6" />
+               <span className="text-xs">Help</span>
+           </button>
+       </nav>
+    );
+
+    // --- Final Render ---
+    if (!currentUser) {
+        return (
+            <>
+                <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+                {isAboutUsOpen && <AboutUsModal onClose={() => setIsAboutUsOpen(false)} />}
+                <AuthScreen
+                    onLogin={handleLogin}
+                    onSignUp={handleSignUp}
+                    onGoogleAuth={handleGoogleAuth}
+                    onShowAbout={() => setIsAboutUsOpen(true)}
+                />
+            </>
+        );
+    }
+    
+    // When logged in
+    return (
+        <div className="h-screen max-h-screen bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-slate-100 flex flex-col">
+            <audio ref={audioRef} id="background-music" loop src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></audio>
+            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+            
+            {newContentModal?.type === 'lesson' && currentUser?.role === Role.Teacher && (
+                <NewLessonModal 
+                    teacherSubjects={subjects.filter(s => s.teacherId === currentUser.id)}
+                    preselectedSubjectId={newContentModal.subjectId}
+                    onClose={() => setNewContentModal(null)}
+                    onSubmit={handleCreateLesson}
+                />
+            )}
+            {newContentModal?.type === 'class' && currentUser?.role === Role.Teacher && (
+                <NewLiveClassModal
+                    teacherSubjects={subjects.filter(s => s.teacherId === currentUser.id)}
+                    preselectedSubjectId={newContentModal.subjectId}
+                    onClose={() => setNewContentModal(null)}
+                    onSubmit={handleCreateLiveClass}
+                />
+            )}
+
+            <Header />
+            {isProfileMenuOpen && <ProfileMenu />}
+
+
+            <main className="flex-grow overflow-y-auto pb-16 md:pb-0">
+                {renderPage()}
             </main>
             
-            <PaymentModal 
-                isOpen={isPaymentModalOpen} 
-                onClose={() => { setPaymentModalOpen(false); if(pendingSignUp) setPendingSignUp(null); }} 
-                onSelectPlan={handleSelectPlan}
-                isSignUpFlow={!!pendingSignUp}
-            />
-            {pendingLiveClass && <LiveStreamTopUpModal isOpen={true} onClose={() => setPendingLiveClass(null)} onConfirm={handleLiveStreamTopUp} liveClass={pendingLiveClass}/>}
-            {selectedLesson && <VideoPlayerModal lesson={selectedLesson} subject={subjects.find(s=>s.id === selectedLesson.subjectId)!} onClose={handleCloseVideoPlayer} />}
-            <JobApplicationModal isOpen={isApplicationModalOpen} onClose={() => setApplicationModalOpen(false)} onSubmit={handleJobApplicationSubmit} />
-            <ConfirmationModal />
-            <BookReaderModal />
-            <SettingsModal />
-            <UserDetailModal />
+            {/* Student Bottom Nav */}
+            {currentUser.role === Role.Student && <BottomNav />}
+
         </div>
     );
 };
