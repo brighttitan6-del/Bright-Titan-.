@@ -318,6 +318,20 @@ export const MicrophoneIcon = ({ className, title }: IconProps) => (
     </svg>
 );
 
+export const MicrophoneSlashIcon = ({ className, title }: IconProps) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        {title && <title>{title}</title>}
+        <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 9.75L19.5 12m0 0l2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5 6L21 3m-5.25 6.375l-4.5-4.5m0 0a4.5 4.5 0 10-6.364 6.364l6.364-6.364zM12 12.75a4.5 4.5 0 01-6.364 0l4.5-4.5a4.5 4.5 0 016.364 0l-4.5 4.5z" />
+    </svg>
+);
+
+export const ArrowsRightLeftIcon = ({ className, title }: IconProps) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        {title && <title>{title}</title>}
+        <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h18m-7.5-12L21 9m0 0L16.5 4.5M21 9H3" />
+    </svg>
+);
+
 export const VideoCameraSlashIcon = ({ className, title }: IconProps) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         {title && <title>{title}</title>}
@@ -329,6 +343,13 @@ export const ChevronUpIcon = ({ className, title }: IconProps) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         {title && <title>{title}</title>}
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+    </svg>
+);
+
+export const ChevronDownIcon = ({ className, title }: IconProps) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        {title && <title>{title}</title>}
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
     </svg>
 );
 

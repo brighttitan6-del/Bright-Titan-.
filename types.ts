@@ -33,6 +33,8 @@ export interface User {
     message: string;
     status: 'Pending' | 'Approved' | 'Rejected';
   };
+  oneTimeClassPasses?: string[]; // Array of LiveClass IDs
+  notificationSettings?: Partial<Record<ActivityType, boolean>>;
 }
 
 export interface Teacher extends User {
@@ -68,6 +70,9 @@ export interface LiveClass {
   // FIX: Added teacherId to LiveClass to allow for filtering by teacher.
   teacherId: string;
   startTime: Date;
+  status?: 'Scheduled' | 'Live' | 'Ended';
+  studyMaterials?: { name: string; url: string; }[];
+  presentationUrl?: string;
 }
 
 export interface ChatMessage {
@@ -155,6 +160,7 @@ export interface Book {
     subject: string;
     price: number;
     coverPhoto: string;
+    password?: string;
 }
 
 export interface BookPurchase {
@@ -250,4 +256,18 @@ export interface ExaminationAttempt {
   totalQuestions: number;
   scoresBySubject: Record<string, { score: number; total: number }>;
   completedAt: Date;
+}
+
+export interface BookRating {
+    bookId: string;
+    studentId: string;
+    rating: number; // 1 to 5
+}
+
+export interface BookNote {
+    id: string;
+    bookId: string;
+    studentId: string;
+    note: string;
+    lastUpdatedAt: Date;
 }

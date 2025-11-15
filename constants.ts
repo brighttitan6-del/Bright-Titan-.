@@ -1,4 +1,4 @@
-import { Role, User, Subject, VideoLesson, LiveClass, PaymentRecord, Quiz, QuizAttempt, Enrollment, LessonCompletion, ActivityLog, ActivityType, Book, SubjectPost, PostType, DirectMessage, ExaminationQuestion, Examination, ExaminationAttempt, SubscriptionPlan, BookPurchase, Withdrawal, LessonBookmark, BookReading, PostComment } from './types';
+import { Role, User, Subject, VideoLesson, LiveClass, PaymentRecord, Quiz, QuizAttempt, Enrollment, LessonCompletion, ActivityLog, ActivityType, Book, SubjectPost, PostType, DirectMessage, ExaminationQuestion, Examination, ExaminationAttempt, SubscriptionPlan, BookPurchase, Withdrawal, LessonBookmark, BookReading, PostComment, BookRating, BookNote } from './types';
 
 export const USERS: User[] = [
   // Student with an expired weekly plan
@@ -13,6 +13,14 @@ export const USERS: User[] = [
       plan: SubscriptionPlan.Weekly,
       startDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
       endDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // Expired 3 days ago
+    },
+    oneTimeClassPasses: [],
+    notificationSettings: {
+      [ActivityType.NewLesson]: true,
+      [ActivityType.LiveReminder]: true,
+      [ActivityType.LiveClassStarted]: true,
+      [ActivityType.NewExamination]: true,
+      [ActivityType.NewDirectMessage]: true,
     }
   },
   { 
@@ -26,10 +34,15 @@ export const USERS: User[] = [
       cvUrl: '/path/to/emily_carter_cv.pdf',
       message: 'I am an experienced English teacher with a passion for literature and helping students find their voice.',
       status: 'Approved',
+    },
+    notificationSettings: {
+        [ActivityType.NewEnrollmentInClass]: true,
+        [ActivityType.QuizSubmission]: true,
+        [ActivityType.NewCommentOnPostTeacher]: true,
     }
   },
   // Student with no payment history
-  { id: 'user-3', name: 'Bob Johnson', email: 'bob@example.com', role: Role.Student, profilePicture: 'https://i.pravatar.cc/150?u=user-3', password: 'password123', subscription: { plan: SubscriptionPlan.None, startDate: new Date(), endDate: new Date() } },
+  { id: 'user-3', name: 'Bob Johnson', email: 'bob@example.com', role: Role.Student, profilePicture: 'https://i.pravatar.cc/150?u=user-3', password: 'password123', subscription: { plan: SubscriptionPlan.None, startDate: new Date(), endDate: new Date() }, oneTimeClassPasses: [], notificationSettings: { [ActivityType.NewLesson]: true, [ActivityType.LiveReminder]: true } },
   // Student with an expired daily plan to test 24-hour lockout
   { 
     id: 'user-4', 
@@ -42,7 +55,9 @@ export const USERS: User[] = [
       plan: SubscriptionPlan.Daily,
       startDate: new Date(Date.now() - 25 * 60 * 60 * 1000), // Started 25 hours ago
       endDate: new Date(Date.now() - 1 * 60 * 60 * 1000), // Expired 1 hour ago
-    }
+    },
+    oneTimeClassPasses: [],
+    notificationSettings: { [ActivityType.NewLesson]: true, [ActivityType.LiveReminder]: true }
   },
   // Student with an active monthly plan
   { 
@@ -56,9 +71,11 @@ export const USERS: User[] = [
       plan: SubscriptionPlan.Monthly,
       startDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
       endDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000), // Expires in 25 days
-    }
+    },
+    oneTimeClassPasses: [],
+    notificationSettings: { [ActivityType.NewLesson]: true, [ActivityType.LiveReminder]: true }
   },
-  { id: 'user-7', name: 'Bright Nason (Owner)', email: 'brightnason19@gmail.com', role: Role.Owner, profilePicture: 'https://i.pravatar.cc/150?u=user-7', password: 'grax2650' },
+  { id: 'user-7', name: 'Bright Nason (Owner)', email: 'brightnason19@gmail.com', role: Role.Owner, profilePicture: 'https://i.pravatar.cc/150?u=user-7', password: 'grax2650', notificationSettings: { [ActivityType.NewEnrollment]: true, [ActivityType.PaymentReceived]: true, [ActivityType.TeacherApplication]: true } },
   { 
     id: 'user-8', 
     name: 'Bright Nason (Teacher)', 
@@ -70,6 +87,11 @@ export const USERS: User[] = [
       cvUrl: '/path/to/bn_cv.pdf',
       message: 'Experienced Maths and Chemistry teacher looking to make a difference.',
       status: 'Approved',
+    },
+    notificationSettings: {
+        [ActivityType.NewEnrollmentInClass]: true,
+        [ActivityType.QuizSubmission]: true,
+        [ActivityType.NewCommentOnPostTeacher]: true,
     }
   },
   // Student with an expired daily plan to verify 24-hour access lock
@@ -84,7 +106,9 @@ export const USERS: User[] = [
       plan: SubscriptionPlan.Daily,
       startDate: new Date(Date.now() - 26 * 60 * 60 * 1000), // Paid 26 hours ago
       endDate: new Date(Date.now() - 2 * 60 * 60 * 1000),   // Expired 2 hours ago
-    }
+    },
+    oneTimeClassPasses: [],
+    notificationSettings: { [ActivityType.NewLesson]: true, [ActivityType.LiveReminder]: true }
   },
   {
     id: 'user-10',
@@ -98,6 +122,7 @@ export const USERS: User[] = [
       message: 'I am a certified Biology teacher with 5 years of experience and I am excited about the opportunity to contribute to the SmartLearn platform.',
       status: 'Pending',
     },
+    notificationSettings: {}
   },
 ];
 
@@ -138,8 +163,31 @@ export const VIDEO_LESSONS: VideoLesson[] = [
 ];
 
 export const INITIAL_LIVE_CLASSES: LiveClass[] = [
-  { id: 'lc-1', subjectId: 'subj-1', title: 'Live Q&A: Calculus Problems', teacherName: 'Bright Nason (Teacher)', teacherId: 'user-8', startTime: new Date(Date.now() + 2 * 60 * 60 * 1000) },
-  { id: 'lc-2', subjectId: 'subj-2', title: 'Poetry Analysis Workshop', teacherName: 'Emily Carter', teacherId: 'user-2', startTime: new Date(Date.now() + 24 * 60 * 60 * 1000) },
+  { 
+    id: 'lc-1', 
+    subjectId: 'subj-1', 
+    title: 'Live Q&A: Calculus Problems', 
+    teacherName: 'Bright Nason (Teacher)', 
+    teacherId: 'user-8', 
+    startTime: new Date(Date.now() + 2 * 60 * 60 * 1000), 
+    status: 'Scheduled',
+    studyMaterials: [
+        { name: 'Calculus Formulas.pdf', url: '/calculus_formulas.pdf' },
+        { name: 'Practice Problems.docx', url: '/practice_problems.docx' },
+    ]
+  },
+  { 
+    id: 'lc-2', 
+    subjectId: 'subj-2', 
+    title: 'Poetry Analysis Workshop', 
+    teacherName: 'Emily Carter', 
+    teacherId: 'user-2', 
+    startTime: new Date(Date.now() + 24 * 60 * 60 * 1000), 
+    status: 'Scheduled',
+    studyMaterials: [
+        { name: 'Shakespeare Sonnet 18.pdf', url: '/sonnet18.pdf' },
+    ]
+  },
 ];
 
 export const PAYMENT_HISTORY: PaymentRecord[] = [
@@ -200,13 +248,28 @@ export const ACTIVITY_LOGS: ActivityLog[] = [
 ];
 
 export const BOOKS: Book[] = [
-  { id: 'book-1', title: 'Comprehensive Mathematics Form 1 & 2', author: 'Dr. John Phiri', subject: 'Mathematics', price: 5000, coverPhoto: 'https://picsum.photos/seed/book1/300/400' },
+  { id: 'book-1', title: 'Comprehensive Mathematics Form 1 & 2', author: 'Dr. John Phiri', subject: 'Mathematics', price: 5000, coverPhoto: 'https://picsum.photos/seed/book1/300/400', password: 'math' },
   { id: 'book-2', title: 'English Grammar Guide', author: 'Jane Banda', subject: 'English', price: 4500, coverPhoto: 'https://picsum.photos/seed/book2/300/400' },
-  { id: 'book-3', title: 'Introduction to Malawian Biology', author: 'Dr. Emily Carter', subject: 'Biology', price: 5500, coverPhoto: 'https://picsum.photos/seed/book3/300/400' },
+  { id: 'book-3', title: 'Introduction to Malawian Biology', author: 'Dr. Emily Carter', subject: 'Biology', price: 5500, coverPhoto: 'https://picsum.photos/seed/book3/300/400', password: 'bio' },
   { id: 'book-4', title: 'Chemistry Matters', author: 'Prof. Peter Moyo', subject: 'Chemistry', price: 6000, coverPhoto: 'https://picsum.photos/seed/book4/300/400' },
 ];
 
-export const BOOK_PURCHASES: BookPurchase[] = [];
+export const BOOK_PURCHASES: BookPurchase[] = [
+    { studentId: 'user-6', bookId: 'book-1'},
+    { studentId: 'user-6', bookId: 'book-2'},
+];
+
+export const BOOK_RATINGS: BookRating[] = [
+    { bookId: 'book-1', studentId: 'user-6', rating: 5 },
+    { bookId: 'book-1', studentId: 'user-1', rating: 4 }, // Note: user-1 has not purchased, but we allow rating for demo
+    { bookId: 'book-2', studentId: 'user-6', rating: 4 },
+];
+
+export const BOOK_NOTES: BookNote[] = [
+    { id: 'note-1', bookId: 'book-1', studentId: 'user-6', note: 'Chapter 2 has some very important formulas for the exam.', lastUpdatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) },
+    { id: 'note-2', bookId: 'book-1', studentId: 'user-6', note: 'Remember to review the section on quadratic equations.', lastUpdatedAt: new Date() },
+    { id: 'note-3', bookId: 'book-2', studentId: 'user-6', note: 'The explanation of subjunctive mood on page 54 is excellent.', lastUpdatedAt: new Date() },
+];
 
 export const BOOK_READINGS: BookReading[] = [];
 
